@@ -154,11 +154,15 @@
     display: flex;
     gap: 0;
     overflow-x: auto;
+    /* 隐藏横向滚动条（macOS / Firefox / Webkit） */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
+  .tabs-inner::-webkit-scrollbar { display: none; width: 0; height: 0; }
   .tab {
     background: none;
     border: none;
-    padding: 16px 18px;
+    padding: 19px 18px;  /* 16 → 19 = +6px 高度 */
     cursor: pointer;
     font-size: 13px;
     color: var(--text-muted);
@@ -266,6 +270,26 @@
     font-family: "SF Mono", ui-monospace, Menlo, monospace;
     font-size: 12px;
     color: var(--text);
+  }
+  .tab-feature-list {
+    list-style: none;
+    margin: 12px 0 4px;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 18px;
+  }
+  .tab-feature-list li {
+    color: var(--text-muted);
+    font-size: 12.5px;
+    line-height: 1.7;
+    padding-left: 0;
+  }
+  .tab-feature-list li strong {
+    color: var(--text);
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 4px;
   }
   textarea, input[type="text"], input[type="password"] {
     width: 100%;
@@ -850,19 +874,121 @@
     color: var(--text-muted);
     font-weight: 600;
   }
-  .session-select {
+  /* 任务下拉自定义按钮 + popover（替换原生 select） */
+  .task-picker {
+    position: relative;
+    display: inline-block;
+  }
+  .task-picker-btn {
     background: var(--bg);
     color: var(--text);
     border: 1px solid var(--border-strong);
-    padding: 7px 12px;
-    border-radius: 7px;
-    font-size: 13px;
-    font-weight: 500;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
     font-family: inherit;
-    min-width: 240px;
+    min-width: 280px;
+    max-width: 380px;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    transition: all 0.15s;
+    min-height: 40px;
   }
-  .session-select:focus { outline: none; border-color: var(--text); }
+  .task-picker-btn:hover {
+    border-color: var(--border-bright);
+    background: var(--bg-hover);
+  }
+  .task-picker-btn.menu-open {
+    border-color: var(--text);
+    background: var(--bg-hover);
+  }
+  .task-picker-btn .tpb-text {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .task-picker-btn .tpb-text.empty {
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  .task-picker-btn .tpb-caret {
+    opacity: 0.5;
+    font-size: 11px;
+    transition: transform 0.15s;
+  }
+  .task-picker-btn.menu-open .tpb-caret { transform: rotate(180deg); opacity: 1; }
+
+  .task-picker-menu {
+    position: absolute;
+    top: calc(100% + 8px); left: 0;
+    min-width: 360px;
+    max-width: 480px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 8px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.6);
+    z-index: 5000;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+  .task-picker-menu[hidden] { display: none; }
+  .task-picker-empty {
+    padding: 20px 14px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .task-picker-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: background 0.15s;
+  }
+  .task-picker-item:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+  }
+  .task-picker-item.active {
+    background: var(--bg-card);
+    color: var(--text);
+    border-left: 2px solid var(--green);
+    padding-left: 12px;
+  }
+  .task-picker-item .tpi-check {
+    width: 16px;
+    flex-shrink: 0;
+    color: var(--green);
+    font-size: 14px;
+    padding-top: 1px;
+  }
+  .task-picker-item .tpi-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .task-picker-item .tpi-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .task-picker-item .tpi-meta {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
   .session-meta {
     font-size: 12px;
     color: var(--text-muted);
@@ -1200,6 +1326,96 @@
   }
   .hub-section-hint.set {
     color: var(--green);
+  }
+
+  /* 对话/任务管理列表 */
+  .tasks-mgr-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .tasks-mgr-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .tmr-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: border 0.15s;
+  }
+  .tmr-card:hover { border-color: var(--border-strong); }
+  .tmr-card.is-current {
+    border-color: rgba(74, 222, 128, 0.4);
+    background: linear-gradient(90deg, rgba(74, 222, 128, 0.04), var(--bg-card) 30%);
+  }
+  .tmr-card .tmr-icon {
+    font-size: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tmr-card .tmr-body { flex: 1; min-width: 0; }
+  .tmr-card .tmr-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tmr-card .tmr-name .current-tag {
+    margin-left: 8px;
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .tmr-card .tmr-stats {
+    display: flex;
+    gap: 14px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .tmr-card .tmr-stats .tmr-stat strong {
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .tmr-card .tmr-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .tmr-card .tmr-btn {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-muted);
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tmr-card .tmr-btn:hover { color: var(--text); border-color: var(--border-bright); }
+  .tmr-card .tmr-btn.danger {
+    color: var(--red);
+    border-color: rgba(248, 113, 113, 0.25);
+  }
+  .tmr-card .tmr-btn.danger:hover {
+    background: rgba(248, 113, 113, 0.15);
+    border-color: rgba(248, 113, 113, 0.5);
   }
 
   /* 模板卡 */
@@ -2046,28 +2262,1118 @@
     border-left-color: var(--green);
     background: rgba(74, 222, 128, 0.08);
   }
+
+
+  /* ===== Auth Overlay (登录 / 注册) ===== */
+  #auth-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(10px);
+    z-index: 50000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #auth-overlay[hidden] { display: none; }
+  .auth-card {
+    width: 100%; max-width: 380px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 32px 28px 26px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  }
+  .auth-card h2 {
+    font-size: 18px; font-weight: 600;
+    margin-bottom: 6px; color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .auth-card .auth-sub {
+    font-size: 12px; color: var(--text-dim);
+    margin-bottom: 22px;
+  }
+  .auth-tabs {
+    display: flex; gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .auth-tab {
+    background: transparent; border: 0;
+    padding: 10px 4px; margin-right: 18px;
+    font-size: 13px; font-weight: 500;
+    color: var(--text-dim); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .auth-tab.active { color: var(--text); border-bottom-color: var(--text); }
+  .auth-tab:hover:not(.active) { color: var(--text-muted); }
+  .auth-form { display: flex; flex-direction: column; gap: 12px; }
+  .auth-form[hidden] { display: none; }
+  .auth-form label {
+    font-size: 11px; color: var(--text-dim);
+    font-weight: 500; letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin-bottom: -8px;
+  }
+  .auth-form input {
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 13px; color: var(--text);
+    font-family: inherit;
+    transition: border 0.15s;
+  }
+  .auth-form input:focus {
+    outline: none;
+    border-color: var(--border-bright);
+  }
+  .auth-form button[type=submit] {
+    background: var(--text); color: var(--bg);
+    border: 0; border-radius: 6px;
+    padding: 11px 16px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; margin-top: 8px;
+    transition: opacity 0.15s;
+  }
+  .auth-form button[type=submit]:hover { opacity: 0.85; }
+  .auth-form button[type=submit]:disabled { opacity: 0.4; cursor: not-allowed; }
+  .auth-error {
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    color: var(--red);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .auth-error[hidden] { display: none; }
+  .auth-hint {
+    color: var(--text-dim); font-size: 11px;
+    margin-top: 14px; text-align: center;
+    line-height: 1.6;
+  }
+
+  /* ===== Header 用户区 ===== */
+  .user-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 11px;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border 0.15s;
+  }
+  .user-pill:hover { border-color: var(--border-bright); color: var(--text); }
+  .balance-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 11px;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .balance-pill .balance-num { color: var(--text); font-weight: 600; }
+  .role-badge {
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: rgba(250, 204, 21, 0.15);
+    color: var(--yellow);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .user-menu {
+    position: absolute;
+    top: calc(100% + 6px); right: 0;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 6px;
+    min-width: 160px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 1000;
+  }
+  .user-menu[hidden] { display: none; }
+  .user-menu-item {
+    display: block; width: 100%;
+    background: transparent; border: 0;
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 12px; color: var(--text-muted);
+    border-radius: 4px; cursor: pointer;
+  }
+  .user-menu-item:hover { background: var(--bg-hover); color: var(--text); }
+  .user-menu-info {
+    padding: 8px 12px 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+    font-size: 11px; color: var(--text-dim);
+  }
+  .user-menu-info strong { color: var(--text); font-size: 13px; display: block; margin-bottom: 2px; }
+  .user-wrap { position: relative; }
+
+  /* （Task Switcher 已删除 — 任务切换交给 Tab 1 的会话栏） */
+
+  /* ===== Modal（更宽松更大字号） ===== */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.78);
+    backdrop-filter: blur(8px);
+    z-index: 40000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal-card {
+    width: 100%; max-width: 640px;
+    max-height: calc(100vh - 40px);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    box-shadow: 0 28px 70px rgba(0,0,0,0.6);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 22px 28px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header h3 {
+    font-size: 18px; font-weight: 600; color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .modal-close {
+    background: transparent; border: 0;
+    color: var(--text-dim); cursor: pointer;
+    font-size: 22px; padding: 6px 10px;
+    line-height: 1;
+    border-radius: 6px;
+  }
+  .modal-close:hover { color: var(--text); background: var(--bg-hover); }
+  .modal-body {
+    padding: 24px 28px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .modal-footer {
+    padding: 18px 28px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 12px; justify-content: flex-end;
+  }
+  .modal-btn {
+    padding: 10px 20px;
+    border-radius: 7px;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border-strong);
+    background: transparent; color: var(--text-muted);
+    transition: all 0.15s;
+    min-height: 38px;
+  }
+  .modal-btn:hover { color: var(--text); border-color: var(--border-bright); }
+  .modal-btn.primary {
+    background: var(--text); color: var(--bg);
+    border-color: var(--text); font-weight: 600;
+  }
+  .modal-btn.primary:hover { opacity: 0.85; }
+  .modal-btn.danger {
+    background: rgba(248, 113, 113, 0.15);
+    border-color: rgba(248, 113, 113, 0.4);
+    color: var(--red);
+  }
+  .modal-btn.danger:hover { background: rgba(248, 113, 113, 0.25); }
+  .modal-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .form-row {
+    display: flex; flex-direction: column; gap: 8px;
+    margin-bottom: 18px;
+  }
+  .form-row label {
+    font-size: 13px; color: var(--text);
+    font-weight: 500;
+  }
+  .form-row input, .form-row select, .form-row textarea {
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 7px;
+    padding: 11px 14px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    min-height: 40px;
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    outline: none; border-color: var(--border-bright);
+  }
+  .form-row textarea { min-height: 72px; resize: vertical; }
+  .form-row-double {
+    display: flex; gap: 14px;
+  }
+  .form-row-double > .form-row { flex: 1; margin-bottom: 0; }
+  .form-help {
+    font-size: 12px; color: var(--text-dim);
+    margin-top: -10px; margin-bottom: 18px;
+    line-height: 1.6;
+  }
+
+  /* （任务管理列表 CSS 已删除） */
+
+  /* ===== 钱包 / 余额 ===== */
+  .balance-pill { cursor: pointer; }
+  .balance-pill:hover { border-color: var(--border-bright); color: var(--text); }
+  .wallet-balance {
+    background: linear-gradient(135deg, rgba(74,222,128,0.08), rgba(74,222,128,0.02));
+    border: 1px solid rgba(74,222,128,0.25);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .wallet-balance .wb-label { color: var(--text-dim); font-size: 12px; }
+  .wallet-balance .wb-num {
+    color: var(--green); font-size: 28px; font-weight: 700;
+    letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  }
+  .wallet-balance .wb-unit { color: var(--text-muted); font-size: 13px; }
+  .wallet-sub-tabs {
+    display: flex; gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .wallet-sub-tab {
+    background: transparent; border: 0;
+    padding: 9px 4px; margin-right: 16px;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-dim); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .wallet-sub-tab.active { color: var(--text); border-bottom-color: var(--text); }
+  .wallet-sub-tab:hover:not(.active) { color: var(--text-muted); }
+  .wallet-pane[hidden] { display: none; }
+  .redeem-row {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .redeem-row input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .redeem-row input:focus { outline: none; border-color: var(--border-bright); }
+  .txn-list { font-size: 12px; }
+  .txn-row {
+    display: flex; gap: 12px; padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    align-items: baseline;
+  }
+  .txn-row:last-child { border-bottom: 0; }
+  .txn-row .tx-time {
+    color: var(--text-dim); font-size: 11px;
+    width: 130px; flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .txn-row .tx-main { flex: 1; min-width: 0; }
+  .txn-row .tx-reason { color: var(--text-muted); }
+  .txn-row .tx-task { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+  .txn-row .tx-delta { font-weight: 600; flex-shrink: 0; text-align: right; min-width: 60px; font-variant-numeric: tabular-nums; }
+  .txn-row .tx-delta.debit { color: var(--red); }
+  .txn-row .tx-delta.credit { color: var(--green); }
+  .txn-row .tx-balance { color: var(--text-dim); font-size: 11px; min-width: 60px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .tier-card {
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .tier-card .tc-amount { font-size: 18px; font-weight: 700; color: var(--text); }
+  .tier-card .tc-points { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .tier-card .tc-bonus { font-size: 11px; color: var(--green); margin-top: 2px; }
+  .tier-card .tc-rate { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+
+  .rules-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 14px;
+    font-size: 12px;
+  }
+  .rules-grid .rk { color: var(--text-muted); }
+  .rules-grid .rv { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 500; }
+  .rules-grid .rh { color: var(--text-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 8px; }
+
+  .by-task-row {
+    display: flex; justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .by-task-row:last-child { border-bottom: 0; }
+  .by-task-row .bt-title { color: var(--text); }
+  .by-task-row .bt-meta { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+  .by-task-row .bt-spent { color: var(--red); font-weight: 600; }
+
+  /* 余额不足模态特殊样式 */
+  .insufficient-icon {
+    font-size: 36px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .insufficient-cost {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 14px 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+    font-size: 12px;
+  }
+  .insufficient-cost .ic-label { color: var(--text-dim); }
+  .insufficient-cost .ic-value { color: var(--text); font-weight: 600; }
+  .insufficient-cost .ic-value.red { color: var(--red); }
+
+  /* ============================================================
+     PR4: Admin Overlay
+     ============================================================ */
+  .admin-shield {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px;
+    background: rgba(250, 204, 21, 0.10);
+    border: 1px solid rgba(250, 204, 21, 0.35);
+    border-radius: 6px;
+    font-size: 11px; font-weight: 600;
+    color: var(--yellow);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .admin-shield:hover {
+    background: rgba(250, 204, 21, 0.18);
+    border-color: rgba(250, 204, 21, 0.55);
+  }
+  /* 修：display:inline-flex 会覆盖 [hidden]，必须显式声明 hidden 时不显示 */
+  .admin-shield[hidden],
+  .balance-pill[hidden],
+  .user-wrap[hidden],
+  .mode-pill[hidden] { display: none !important; }
+
+  #admin-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 30000;
+    display: flex; flex-direction: column;
+  }
+  #admin-overlay[hidden] { display: none; }
+  .admin-topbar {
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .admin-topbar h2 {
+    font-size: 15px; font-weight: 600;
+    color: var(--yellow);
+    letter-spacing: -0.005em;
+  }
+  .admin-topbar h2 .admin-sub {
+    color: var(--text-dim);
+    font-weight: 400;
+    font-size: 12px;
+    margin-left: 10px;
+  }
+  .admin-topbar-actions {
+    display: flex; gap: 10px; align-items: center;
+  }
+  .admin-exit-btn {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .admin-exit-btn:hover { color: var(--text); border-color: var(--border-bright); }
+
+  .admin-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  .admin-sidebar {
+    width: 220px;
+    background: var(--bg-elevated);
+    border-right: 1px solid var(--border);
+    padding: 16px 8px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .admin-nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+    margin-bottom: 2px;
+  }
+  .admin-nav-item:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+  }
+  .admin-nav-item.active {
+    background: var(--bg-card);
+    color: var(--yellow);
+    font-weight: 500;
+  }
+  .admin-nav-icon { width: 18px; flex-shrink: 0; }
+  .admin-content {
+    flex: 1;
+    padding: 28px 32px;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+  .admin-pane[hidden] { display: none; }
+
+  .admin-pane h3 {
+    font-size: 16px; font-weight: 600;
+    color: var(--text);
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+  }
+  .admin-pane .pane-desc {
+    font-size: 12px; color: var(--text-dim);
+    margin-bottom: 22px;
+    line-height: 1.7;
+  }
+
+  /* 概览统计卡片 */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  .stat-card .sc-label {
+    font-size: 11px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .stat-card .sc-value {
+    font-size: 26px; font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-card .sc-sub {
+    font-size: 11px; color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .stat-card.accent .sc-value { color: var(--green); }
+  .stat-card.warn .sc-value { color: var(--yellow); }
+
+  /* 表格 */
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .admin-table thead th {
+    text-align: left;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-elevated);
+    font-weight: 500;
+  }
+  .admin-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: middle;
+  }
+  .admin-table tbody tr:hover { background: var(--bg-hover); }
+  .admin-table tbody tr:hover td { color: var(--text); }
+  .admin-table .role-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .admin-table .role-tag.admin {
+    background: rgba(250, 204, 21, 0.15);
+    color: var(--yellow);
+  }
+  .admin-table .role-tag.user {
+    background: var(--bg-card);
+    color: var(--text-dim);
+  }
+  .admin-table .status-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+  }
+  .admin-table .status-tag.active { color: var(--green); }
+  .admin-table .status-tag.disabled { color: var(--red); }
+  .admin-table .status-tag.unused { color: var(--green); }
+  .admin-table .status-tag.used { color: var(--text-dim); }
+  .admin-table .status-tag.revoked { color: var(--red); }
+  .admin-table .status-tag.expired { color: var(--text-dim); }
+  .admin-table .row-btn {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-muted);
+    padding: 3px 9px;
+    border-radius: 4px;
+    font-size: 10px;
+    cursor: pointer;
+    margin-right: 4px;
+  }
+  .admin-table .row-btn:hover { color: var(--text); border-color: var(--border-bright); }
+  .admin-table .row-btn.danger { color: var(--red); border-color: rgba(248,113,113,0.3); }
+  .admin-table .row-btn.danger:hover { background: rgba(248,113,113,0.15); }
+
+  /* 工具栏 */
+  .admin-toolbar {
+    display: flex; gap: 10px; align-items: center;
+    margin-bottom: 14px;
+  }
+  .admin-toolbar input,
+  .admin-toolbar select {
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-size: 12px;
+  }
+  .admin-toolbar input:focus,
+  .admin-toolbar select:focus { outline: none; border-color: var(--border-bright); }
+  .admin-toolbar .spacer { flex: 1; }
+  .admin-toolbar button {
+    background: var(--text); color: var(--bg);
+    border: 0;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .admin-toolbar button.secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-strong);
+    font-weight: 500;
+  }
+  .admin-toolbar button:hover { opacity: 0.85; }
+
+  .copy-btn {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-muted);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    margin-left: 6px;
+  }
+  .copy-btn:hover { color: var(--green); border-color: var(--green); }
+
+  .code-cell {
+    font-family: ui-monospace, "SF Mono", monospace;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
 </style>
 </head>
 <body>
+
+<!-- ========== 登录 / 注册 覆盖层（启动时显示，登录成功后隐藏） ========== -->
+<div id="auth-overlay" hidden>
+  <div class="auth-card" style="position:relative;">
+    <button onclick="hideAuthOverlay()"
+            style="position:absolute;top:14px;right:14px;background:transparent;border:0;color:var(--text-dim);font-size:20px;cursor:pointer;padding:6px 10px;line-height:1;border-radius:6px;"
+            title="返回首页">✕</button>
+    <h2>📋 简历教练</h2>
+    <div class="auth-sub">目前仅邀请制开放</div>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" data-auth-tab="login" onclick="switchAuthTab('login')">登录</button>
+      <button type="button" class="auth-tab" data-auth-tab="register" onclick="switchAuthTab('register')">注册</button>
+    </div>
+
+    <form class="auth-form" id="auth-form-login" onsubmit="handleLogin(event)">
+      <label>用户名</label>
+      <input type="text" id="login-username" autocomplete="username" required>
+      <label>密码</label>
+      <input type="password" id="login-password" autocomplete="current-password" required>
+      <div class="auth-error" id="login-error" hidden></div>
+      <button type="submit" id="login-submit">登录</button>
+    </form>
+
+    <form class="auth-form" id="auth-form-register" hidden onsubmit="handleRegister(event)">
+      <label>用户名（3-30 位，字母/数字/下划线）</label>
+      <input type="text" id="reg-username" autocomplete="username" required minlength="3" maxlength="30">
+      <label>密码（至少 6 位）</label>
+      <input type="password" id="reg-password" autocomplete="new-password" required minlength="6">
+      <label>邀请码</label>
+      <input type="text" id="reg-invite" placeholder="如 RC8K3M2P" required maxlength="20" style="text-transform:uppercase;">
+      <div class="auth-error" id="reg-error" hidden></div>
+      <button type="submit" id="reg-submit">注册并登录</button>
+    </form>
+
+    <div class="auth-hint">本地离线服务 · 数据保存在你的电脑</div>
+  </div>
+</div>
 
 <header>
   <div class="header-content">
     <div>
       <h1>📋 简历教练</h1>
-      <div class="tagline">STAR 法则驱动 · 简历生成 / 公司诊断 / 面试备战 / 简历中心</div>
+      <div class="tagline">STAR 法则驱动 · 简历生成 / 公司诊断 / 面试备战 / 个人中心</div>
     </div>
-    <div class="header-actions">
+    <div class="header-actions" id="header-actions">
       <span class="mode-pill" id="mode-pill" onclick="openModelSettings()" title="点击配置模型">⚪ 检测后端中…</span>
+      <!-- 登录后由 JS 渲染：balance-pill + user-pill -->
+      <span class="balance-pill" id="balance-pill" hidden onclick="openWallet()" title="点击打开我的钱包">💰 <span class="balance-num" id="balance-num">0</span> 积分</span>
+      <button class="admin-shield" id="admin-shield" hidden onclick="openAdminPanel()">🛡️ 管理后台</button>
+      <span class="user-wrap" id="user-wrap" hidden>
+        <span class="user-pill" id="user-pill" onclick="toggleUserMenu(event)">
+          <span id="user-pill-name">—</span>
+          <span class="role-badge" id="user-role-badge" hidden>ADMIN</span>
+          <span style="opacity:0.6">▾</span>
+        </span>
+        <div class="user-menu" id="user-menu" hidden>
+          <div class="user-menu-info">
+            <strong id="user-menu-name">—</strong>
+            <span id="user-menu-meta">—</span>
+          </div>
+          <button class="user-menu-item" onclick="openWallet()">💰 我的钱包</button>
+          <button class="user-menu-item" onclick="handleLogout()">🚪 退出登录</button>
+        </div>
+      </span>
     </div>
   </div>
 </header>
+
+<!-- ========================================================================
+     PR4: 管理后台 Overlay（admin 专用，全屏）
+     ======================================================================== -->
+<div id="admin-overlay" hidden>
+  <div class="admin-topbar">
+    <h2>🛡️ 管理后台<span class="admin-sub" id="admin-sub-info">—</span></h2>
+    <div class="admin-topbar-actions">
+      <button class="admin-exit-btn" onclick="closeAdminPanel()">← 返回应用</button>
+    </div>
+  </div>
+  <div class="admin-body">
+    <div class="admin-sidebar">
+      <div class="admin-nav-item active" data-pane="dashboard" onclick="switchAdminPane('dashboard')">
+        <span class="admin-nav-icon">📊</span> 概览
+      </div>
+      <div class="admin-nav-item" data-pane="users" onclick="switchAdminPane('users')">
+        <span class="admin-nav-icon">👥</span> 用户管理
+      </div>
+      <div class="admin-nav-item" data-pane="invites" onclick="switchAdminPane('invites')">
+        <span class="admin-nav-icon">🎟️</span> 邀请码
+      </div>
+      <div class="admin-nav-item" data-pane="recharges" onclick="switchAdminPane('recharges')">
+        <span class="admin-nav-icon">💳</span> 充值码
+      </div>
+    </div>
+
+    <div class="admin-content">
+      <!-- 概览 -->
+      <div class="admin-pane" id="admin-pane-dashboard">
+        <h3>📊 概览</h3>
+        <div class="pane-desc">系统整体状态快照。</div>
+        <div class="stat-grid" id="dashboard-stats">
+          <div style="grid-column:1/-1;color:var(--text-dim);font-size:12px;text-align:center;padding:30px;">加载中…</div>
+        </div>
+        <h3 style="margin-top:30px;">最近交易</h3>
+        <div id="dashboard-recent">
+          <div style="color:var(--text-dim);font-size:12px;padding:14px;">加载中…</div>
+        </div>
+      </div>
+
+      <!-- 用户管理 -->
+      <div class="admin-pane" id="admin-pane-users" hidden>
+        <h3>👥 用户管理</h3>
+        <div class="pane-desc">查看 / 调余额 / 改角色 / 重置密码 / 禁用账号。所有调整都会写入审计日志。</div>
+        <div class="admin-toolbar">
+          <input type="text" id="user-search" placeholder="🔍 搜索用户名…" oninput="loadAdminUsersDebounced()">
+          <select id="user-role-filter" onchange="loadAdminUsers()">
+            <option value="">全部角色</option>
+            <option value="user">普通用户</option>
+            <option value="admin">管理员</option>
+          </select>
+          <select id="user-status-filter" onchange="loadAdminUsers()">
+            <option value="">全部状态</option>
+            <option value="active">活跃</option>
+            <option value="disabled">禁用</option>
+          </select>
+          <span class="spacer"></span>
+          <button class="secondary" onclick="loadAdminUsers()">刷新</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table" id="user-table">
+            <thead><tr>
+              <th>ID</th>
+              <th>用户名</th>
+              <th>角色</th>
+              <th>状态</th>
+              <th>余额</th>
+              <th>任务</th>
+              <th>注册时间</th>
+              <th>最近登录</th>
+              <th>操作</th>
+            </tr></thead>
+            <tbody><tr><td colspan="9" style="text-align:center;color:var(--text-dim);">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 邀请码 -->
+      <div class="admin-pane" id="admin-pane-invites" hidden>
+        <h3>🎟️ 邀请码</h3>
+        <div class="pane-desc">批量生成邀请码。注册用户必须输入邀请码，单张码用一次即失效。</div>
+        <div class="admin-toolbar">
+          <select id="invite-status-filter" onchange="loadAdminInvites()">
+            <option value="">全部状态</option>
+            <option value="unused" selected>未用</option>
+            <option value="used">已用</option>
+            <option value="revoked">已撤销</option>
+            <option value="expired">已过期</option>
+          </select>
+          <span class="spacer"></span>
+          <button onclick="openCreateInviteModal()">+ 生成邀请码</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table" id="invite-table">
+            <thead><tr>
+              <th>code</th>
+              <th>积分</th>
+              <th>状态</th>
+              <th>使用者</th>
+              <th>过期时间</th>
+              <th>备注</th>
+              <th>操作</th>
+            </tr></thead>
+            <tbody><tr><td colspan="7" style="text-align:center;color:var(--text-dim);">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 充值码 -->
+      <div class="admin-pane" id="admin-pane-recharges" hidden>
+        <h3>💳 充值码</h3>
+        <div class="pane-desc">批量生成充值码。<strong>通用券</strong>任何已注册用户可兑换；<strong>实名券</strong>只能指定用户兑换。</div>
+        <div class="admin-toolbar">
+          <select id="recharge-status-filter" onchange="loadAdminRecharges()">
+            <option value="">全部状态</option>
+            <option value="unused" selected>未用</option>
+            <option value="used">已用</option>
+            <option value="revoked">已撤销</option>
+            <option value="expired">已过期</option>
+          </select>
+          <span class="spacer"></span>
+          <button onclick="openCreateRechargeModal()">+ 生成充值码</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table" id="recharge-table">
+            <thead><tr>
+              <th>code</th>
+              <th>积分</th>
+              <th>状态</th>
+              <th>类型</th>
+              <th>绑定/使用者</th>
+              <th>过期时间</th>
+              <th>备注</th>
+              <th>操作</th>
+            </tr></thead>
+            <tbody><tr><td colspan="8" style="text-align:center;color:var(--text-dim);">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 子 Modal: 用户详情 / 调整余额 ========== -->
+<div class="modal-backdrop" id="user-edit-modal" hidden onclick="onModalBackdrop(event, 'user-edit-modal')">
+  <div class="modal-card" style="max-width:560px;">
+    <div class="modal-header">
+      <h3 id="ue-title">用户详情</h3>
+      <button class="modal-close" onclick="closeModal('user-edit-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="ue-body">加载中…</div>
+  </div>
+</div>
+
+<!-- ========== 子 Modal: 调余额 ========== -->
+<div class="modal-backdrop" id="adjust-modal" hidden onclick="onModalBackdrop(event, 'adjust-modal')">
+  <div class="modal-card" style="max-width:420px;">
+    <div class="modal-header">
+      <h3>调整积分</h3>
+      <button class="modal-close" onclick="closeModal('adjust-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="adjust-context" style="font-size:12px;color:var(--text-dim);margin-bottom:14px;"></div>
+      <div class="form-row">
+        <label>变动积分（正加负减）</label>
+        <input type="number" id="adjust-delta" placeholder="如 +100 或 -50">
+      </div>
+      <div class="form-row">
+        <label>调整原因（必填，写入审计）</label>
+        <input type="text" id="adjust-reason" placeholder="如：补偿活动 / 重置等">
+      </div>
+      <div class="auth-error" id="adjust-error" hidden></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('adjust-modal')">取消</button>
+      <button class="modal-btn primary" onclick="submitAdjust()">应用</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 子 Modal: 生成邀请码 ========== -->
+<div class="modal-backdrop" id="create-invite-modal" hidden onclick="onModalBackdrop(event, 'create-invite-modal')">
+  <div class="modal-card" style="max-width:460px;">
+    <div class="modal-header">
+      <h3>🎟️ 生成邀请码</h3>
+      <button class="modal-close" onclick="closeModal('create-invite-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row-double">
+        <div class="form-row">
+          <label>每张积分</label>
+          <input type="number" id="ci-points" value="100" min="0">
+        </div>
+        <div class="form-row">
+          <label>张数</label>
+          <input type="number" id="ci-count" value="1" min="1" max="200">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>有效期（天）</label>
+        <input type="number" id="ci-days" value="30" min="1">
+      </div>
+      <div class="form-row">
+        <label>备注（可选）</label>
+        <input type="text" id="ci-note" placeholder="如：朋友 / 早期内测">
+      </div>
+      <div class="auth-error" id="ci-error" hidden></div>
+      <div id="ci-result" hidden style="margin-top:14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:ui-monospace,monospace;font-size:13px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('create-invite-modal')">关闭</button>
+      <button class="modal-btn primary" id="ci-submit" onclick="submitCreateInvite()">生成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 子 Modal: 生成充值码 ========== -->
+<div class="modal-backdrop" id="create-recharge-modal" hidden onclick="onModalBackdrop(event, 'create-recharge-modal')">
+  <div class="modal-card" style="max-width:460px;">
+    <div class="modal-header">
+      <h3>💳 生成充值码</h3>
+      <button class="modal-close" onclick="closeModal('create-recharge-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row-double">
+        <div class="form-row">
+          <label>每张积分 *</label>
+          <input type="number" id="cr-points" value="100" min="1">
+        </div>
+        <div class="form-row">
+          <label>张数</label>
+          <input type="number" id="cr-count" value="1" min="1" max="200">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>有效期（天）</label>
+        <input type="number" id="cr-days" value="60" min="1">
+      </div>
+      <div class="form-row">
+        <label>类型</label>
+        <select id="cr-kind" onchange="document.getElementById('cr-bound-row').hidden = (this.value !== 'bound')">
+          <option value="universal">通用券（任何用户可兑）</option>
+          <option value="bound">实名券（绑定到指定用户）</option>
+        </select>
+      </div>
+      <div class="form-row" id="cr-bound-row" hidden>
+        <label>绑定用户名</label>
+        <input type="text" id="cr-bound" placeholder="如 alice">
+      </div>
+      <div class="form-row">
+        <label>备注（可选）</label>
+        <input type="text" id="cr-note" placeholder="如：用户 X 转账 50 元">
+      </div>
+      <div class="auth-error" id="cr-error" hidden></div>
+      <div id="cr-result" hidden style="margin-top:14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:ui-monospace,monospace;font-size:13px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('create-recharge-modal')">关闭</button>
+      <button class="modal-btn primary" id="cr-submit" onclick="submitCreateRecharge()">生成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: 我的钱包 ========== -->
+<div class="modal-backdrop" id="wallet-modal" hidden onclick="onModalBackdrop(event, 'wallet-modal')">
+  <div class="modal-card" style="max-width:640px;">
+    <div class="modal-header">
+      <h3>💰 我的钱包</h3>
+      <button class="modal-close" onclick="closeModal('wallet-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- 余额 -->
+      <div class="wallet-balance">
+        <span class="wb-label">当前余额</span>
+        <span class="wb-num" id="wallet-balance-num">0</span>
+        <span class="wb-unit">积分</span>
+      </div>
+
+      <!-- 子页 tabs -->
+      <div class="wallet-sub-tabs">
+        <button class="wallet-sub-tab active" data-wp="redeem" onclick="switchWalletTab('redeem')">兑换 / 充值</button>
+        <button class="wallet-sub-tab" data-wp="txns" onclick="switchWalletTab('txns')">消费明细</button>
+        <button class="wallet-sub-tab" data-wp="bytask" onclick="switchWalletTab('bytask')">按任务汇总</button>
+        <button class="wallet-sub-tab" data-wp="recharges" onclick="switchWalletTab('recharges')">充值记录</button>
+        <button class="wallet-sub-tab" data-wp="rules" onclick="switchWalletTab('rules')">价目表</button>
+      </div>
+
+      <!-- pane: 兑换 -->
+      <div class="wallet-pane" id="wallet-pane-redeem">
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">输入充值码或兑换券，到账后自动刷新余额：</div>
+        <div class="redeem-row">
+          <input type="text" id="redeem-input" placeholder="RC8K3M2P" maxlength="20">
+          <button class="modal-btn primary" id="redeem-btn" onclick="submitRedeem()">兑换</button>
+        </div>
+        <div class="auth-error" id="redeem-error" hidden></div>
+        <div id="redeem-success" hidden style="color:var(--green);font-size:12px;margin-top:8px;"></div>
+
+        <div style="margin-top:22px;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">充值档位（联系管理员获取兑换码）</div>
+        <div class="tier-grid" id="tier-grid">
+          <!-- 由 JS 渲染 -->
+        </div>
+      </div>
+
+      <!-- pane: 消费明细 -->
+      <div class="wallet-pane" id="wallet-pane-txns" hidden>
+        <div class="txn-list" id="txn-list">
+          <div style="color:var(--text-dim);font-size:12px;text-align:center;padding:20px;">加载中…</div>
+        </div>
+      </div>
+
+      <!-- pane: 按任务汇总 -->
+      <div class="wallet-pane" id="wallet-pane-bytask" hidden>
+        <div id="by-task-list">
+          <div style="color:var(--text-dim);font-size:12px;text-align:center;padding:20px;">加载中…</div>
+        </div>
+      </div>
+
+      <!-- pane: 充值记录 -->
+      <div class="wallet-pane" id="wallet-pane-recharges" hidden>
+        <div id="recharge-list">
+          <div style="color:var(--text-dim);font-size:12px;text-align:center;padding:20px;">加载中…</div>
+        </div>
+      </div>
+
+      <!-- pane: 价目表 -->
+      <div class="wallet-pane" id="wallet-pane-rules" hidden>
+        <div class="rules-grid" id="rules-grid">
+          <div style="grid-column:1/-1;color:var(--text-dim);font-size:12px;text-align:center;padding:20px;">加载中…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: 余额不足 ========== -->
+<div class="modal-backdrop" id="insufficient-modal" hidden onclick="onModalBackdrop(event, 'insufficient-modal')">
+  <div class="modal-card" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>⚠️ 积分不足</h3>
+      <button class="modal-close" onclick="closeModal('insufficient-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="insufficient-icon">💰</div>
+      <div style="text-align:center;font-size:13px;color:var(--text-muted);">本次操作需要积分，你的余额不够了。</div>
+      <div class="insufficient-cost">
+        <span class="ic-label">所需积分</span>
+        <span class="ic-value" id="insuf-cost">—</span>
+        <span class="ic-label">当前余额</span>
+        <span class="ic-value red" id="insuf-balance">—</span>
+        <span class="ic-label">动作</span>
+        <span class="ic-value" id="insuf-action">—</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('insufficient-modal')">先放着</button>
+      <button class="modal-btn primary" onclick="closeModal('insufficient-modal');openWallet('redeem');">兑换 / 充值</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: 通用确认 / 二次确认 ========== -->
+<div class="modal-backdrop" id="confirm-modal" hidden onclick="onModalBackdrop(event, 'confirm-modal')">
+  <div class="modal-card" style="max-width:420px;">
+    <div class="modal-header">
+      <h3 id="confirm-title">确认</h3>
+      <button class="modal-close" onclick="closeModal('confirm-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="confirm-body" style="font-size:13px; color:var(--text-muted); line-height:1.7;"></div>
+      <div class="form-row" id="confirm-input-row" hidden style="margin-top:14px;">
+        <label id="confirm-input-label">为确认，请输入任务名称</label>
+        <input type="text" id="confirm-input">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('confirm-modal')">取消</button>
+      <button class="modal-btn primary" id="confirm-ok-btn" onclick="onConfirmOk()">确认</button>
+    </div>
+  </div>
+</div>
 
 <nav class="tabs">
   <div class="tabs-inner">
     <button class="tab active" data-tab="build">📝 1. 简历生成</button>
     <button class="tab" data-tab="critique">🎯 2. 公司诊断</button>
     <button class="tab" data-tab="interview">🎤 3. 面试备战</button>
-    <button class="tab" data-tab="deai">📂 4. 简历中心</button>
+    <button class="tab" data-tab="deai">📂 4. 个人中心</button>
   </div>
 </nav>
 
@@ -2076,18 +3382,26 @@
   <!-- ============ Tab 1: 简历生成（对话式建档） ============ -->
   <section class="tab-content active" id="tab-build">
 
-    <!-- 会话管理栏：当前会话 + 切换 + 新建/重命名/删除 + 版本计数 -->
+    <!-- 任务管理栏：一个会话 = 一个求职方向 = 一个后端任务 -->
     <div class="session-bar">
       <div class="session-current">
         <span class="session-icon">📂</span>
-        <span class="session-label">当前会话</span>
-        <select class="session-select" id="session-select" onchange="switchSession(this.value)"></select>
+        <span class="session-label">当前任务</span>
+        <div class="task-picker">
+          <button class="task-picker-btn" id="task-picker-btn" onclick="toggleTaskPicker(event)">
+            <span class="tpb-text empty" id="task-picker-text">（暂无任务）</span>
+            <span class="tpb-caret">▾</span>
+          </button>
+          <div class="task-picker-menu" id="task-picker-menu" hidden>
+            <!-- 由 JS 渲染 -->
+          </div>
+        </div>
         <span class="session-meta" id="session-meta"></span>
       </div>
       <div class="session-actions">
-        <button class="chat-tool-btn" onclick="newSession()">＋ 新建</button>
+        <button class="chat-tool-btn" onclick="newSession()">＋ 新建任务</button>
         <button class="chat-tool-btn" onclick="renameSession()">✏️ 重命名</button>
-        <button class="chat-tool-btn" onclick="deleteSession()">🗑 删除</button>
+        <button class="chat-tool-btn" onclick="deleteSession()">🗑 删除任务</button>
       </div>
     </div>
 
@@ -2176,12 +3490,24 @@
     </div>
   </section>
 
-  <!-- ============ Tab 3: 面试备战 ============ -->
+  <!-- ============ Tab 3: 面试备战（跨任务） ============ -->
   <section class="tab-content" id="tab-interview">
+    <div class="tab-intro">
+      <h2 class="tab-title">面试备战四件套</h2>
+      <p class="tab-desc">
+        从下拉里选一家<strong>已诊断的公司</strong>（跨任务、所有公司都在），针对这家公司一次性生成 4 类材料：
+      </p>
+      <ul class="tab-feature-list">
+        <li><strong>📊 战略分析</strong> — 公司业务背景、岗位核心要求、面试官关注什么、你的差异化优势在哪</li>
+        <li><strong>🎙 自我介绍口水稿</strong> — 60 秒 / 3 分钟两版，针对该公司贴脸定制，可以背</li>
+        <li><strong>❓ 高频问答库</strong> — 该公司 / 该岗位常问问题，每题给标准答题框架 + 你的具体素材填充</li>
+        <li><strong>🔥 深挖预案</strong> — 简历里最容易被追问的几个点 + 难题如何应对，避免被问哑火</li>
+      </ul>
+    </div>
     <div class="selector-row">
-      <label>已诊断的公司：</label>
-      <select id="interview-company-select">
-        <option value="">— 请先在「公司诊断」生成至少一家 —</option>
+      <label>选择公司：</label>
+      <select id="interview-company-select" onchange="onInterviewCompanyChange()">
+        <option value="">— 加载中… —</option>
       </select>
       <button class="btn-primary" onclick="generateInterview()">🎤 生成 4 类备战材料</button>
     </div>
@@ -2205,12 +3531,21 @@
   <!-- ============ Tab 4: 个人简历中心 ============ -->
   <section class="tab-content" id="tab-deai">
     <div class="tab-intro">
-      <h2 class="tab-title">个人简历中心</h2>
+      <h2 class="tab-title">个人中心</h2>
       <p class="tab-desc">
-        聚合所有生成过的简历：来自「简历生成」的<strong>主版</strong>、来自「公司诊断」的<strong>各公司特化版</strong>。
-        点击任意一份 → 右侧滑出抽屉查看全貌。下载支持 <code>.md</code> / <code>.html</code> / <code>.pdf</code> 三种格式，
-        其中 HTML / PDF 需要先在下方选择简历模板。
+        管理你的所有任务、简历归档、模板设置。删除任务会一并删除该任务下所有简历、公司分析、面试包，请谨慎操作。
       </p>
+    </div>
+
+    <!-- 对话管理 -->
+    <div class="hub-section">
+      <div class="hub-section-header">
+        <h3 class="hub-section-title">💬 任务对话管理</h3>
+        <span class="hub-section-hint" id="tasks-mgr-hint">加载中…</span>
+      </div>
+      <div id="tasks-mgr-list" class="tasks-mgr-list">
+        <!-- 由 JS 渲染 -->
+      </div>
     </div>
 
     <!-- 模板设置区 -->
@@ -2348,16 +3683,1050 @@
    STATE
    =========================================================================== */
 const state = {
-  serverConnected: false,  // 启动时和定期检测本地后端是否在跑
+  serverConnected: false,
   rawInput: '',
   masterResume: '',
   starCheck: '',
   targets: {},
   currentInterviewCompany: null,
+  currentUser: null,        // 登录后的用户信息
+  currentTaskId: null,      // 当前 Tab 1 会话对应的后端 task_id（AI 调用归属用）
 };
 
 // 同源调 API（云部署 / 本地容器都 work；空串等价于 window.location.origin）
 const BACKEND_URL = '';
+
+/* ===========================================================================
+   AUTH（登录 / 注册 / 退出 / 检查会话）
+   - 后端走 cookie session，同源请求浏览器自动带上
+   - 所有 fetch 不需要改，浏览器自动处理 Set-Cookie
+   =========================================================================== */
+async function checkAuth() {
+  try {
+    const r = await fetch(BACKEND_URL + '/me', { method: 'GET' });
+    if (r.status === 401) return null;
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data.user || null;
+  } catch {
+    return null;
+  }
+}
+
+function showAuthOverlay() {
+  document.getElementById('auth-overlay').hidden = false;
+  setTimeout(() => {
+    const el = document.getElementById('login-username');
+    if (el) el.focus();
+  }, 50);
+}
+
+function hideAuthOverlay() {
+  document.getElementById('auth-overlay').hidden = true;
+}
+
+function switchAuthTab(name) {
+  document.querySelectorAll('.auth-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.authTab === name);
+  });
+  document.getElementById('auth-form-login').hidden = (name !== 'login');
+  document.getElementById('auth-form-register').hidden = (name !== 'register');
+  // 清空错误
+  document.getElementById('login-error').hidden = true;
+  document.getElementById('reg-error').hidden = true;
+}
+
+function showAuthError(formKey, msg) {
+  const el = document.getElementById(formKey === 'login' ? 'login-error' : 'reg-error');
+  el.textContent = msg;
+  el.hidden = false;
+}
+
+async function handleLogin(ev) {
+  ev.preventDefault();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-submit');
+  btn.disabled = true; btn.textContent = '登录中…';
+  document.getElementById('login-error').hidden = true;
+  try {
+    const r = await fetch(BACKEND_URL + '/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      showAuthError('login', data.error || ('登录失败 ' + r.status));
+      return;
+    }
+    state.currentUser = data.user;
+    onLoggedIn(data.user);
+  } catch (e) {
+    showAuthError('login', '网络错误：' + (e.message || e));
+  } finally {
+    btn.disabled = false; btn.textContent = '登录';
+  }
+}
+
+async function handleRegister(ev) {
+  ev.preventDefault();
+  const username = document.getElementById('reg-username').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const invite = document.getElementById('reg-invite').value.trim().toUpperCase();
+  const btn = document.getElementById('reg-submit');
+  btn.disabled = true; btn.textContent = '注册中…';
+  document.getElementById('reg-error').hidden = true;
+  try {
+    const r = await fetch(BACKEND_URL + '/register', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username, password, invitation_code: invite }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      showAuthError('register', data.error || ('注册失败 ' + r.status));
+      return;
+    }
+    state.currentUser = data.user;
+    onLoggedIn(data.user);
+  } catch (e) {
+    showAuthError('register', '网络错误：' + (e.message || e));
+  } finally {
+    btn.disabled = false; btn.textContent = '注册并登录';
+  }
+}
+
+async function handleLogout() {
+  try {
+    await fetch(BACKEND_URL + '/logout', { method: 'POST' });
+  } catch {}
+  state.currentUser = null;
+  // PR2/3: 清空 localStorage 里属于本应用的全部状态
+  // 防止下一个用户登录时看到上一个用户的 Tab 1 会话历史 / 任务 id / 模板偏好等
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      // 应用相关 key 前缀（尽可能宽松地清）
+      if (k && (k.startsWith('rc:') || k.startsWith('rc-') ||
+                k.startsWith('resume-coach') || k.startsWith('resumeCoach') ||
+                k.startsWith('sessions') || k.startsWith('tab2') ||
+                k.startsWith('hubTemplate') || k.startsWith('models'))) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch (e) { console.warn('localStorage clear failed', e); }
+  // 退出后回到 landing 首页
+  location.href = '/';
+}
+
+function toggleUserMenu(ev) {
+  ev.stopPropagation();
+  const menu = document.getElementById('user-menu');
+  menu.hidden = !menu.hidden;
+  if (!menu.hidden) {
+    // 点别处关闭
+    setTimeout(() => {
+      document.addEventListener('click', closeUserMenuOnce, { once: true });
+    }, 0);
+  }
+}
+function closeUserMenuOnce() {
+  document.getElementById('user-menu').hidden = true;
+}
+
+function renderUserUI(user) {
+  if (!user) return;
+  const isAdmin = user.role === 'admin';
+
+  // 积分 pill：所有用户都显示（普通用户需要看到余额）
+  document.getElementById('balance-pill').hidden = false;
+  document.getElementById('balance-num').textContent = user.points_balance;
+
+  // 模型配置 pill：仅 admin（普通用户不需要也不应该改模型配置）
+  document.getElementById('mode-pill').hidden = !isAdmin;
+  // admin-shield 由 renderAdminEntryIfAdmin() 负责，这里不动
+
+  document.getElementById('user-wrap').hidden = false;
+  document.getElementById('user-pill-name').textContent = user.username;
+  document.getElementById('user-menu-name').textContent = user.username;
+  document.getElementById('user-menu-meta').textContent =
+    isAdmin ? '管理员账号' : '普通用户';
+  document.getElementById('user-role-badge').hidden = !isAdmin;
+}
+
+async function onLoggedIn(user) {
+  hideAuthOverlay();
+  renderUserUI(user);
+  // PR4: 显示 admin 入口（仅 admin 角色）
+  if (typeof renderAdminEntryIfAdmin === 'function') renderAdminEntryIfAdmin();
+  // 真正启动业务初始化（Tab 1 的会话栏就是任务选择器）
+  bootApp();
+}
+
+// 监听 401：业务请求里若返回 401，说明 session 失效，跳回首页登录
+async function authedFetch(url, options) {
+  const r = await fetch(url, options);
+  if (r.status === 401) {
+    state.currentUser = null;
+    // session 过期：直接跳回首页（首页有登录弹窗）
+    location.href = '/';
+    throw new Error('未登录或会话已过期');
+  }
+  return r;
+}
+
+/* ===========================================================================
+   Modal 通用工具（被 admin / 钱包 / 确认框共用）
+   =========================================================================== */
+function openModal(id) { document.getElementById(id).hidden = false; }
+function closeModal(id) { document.getElementById(id).hidden = true; }
+function onModalBackdrop(ev, id) {
+  if (ev.target.id === id) closeModal(id);
+}
+
+/* ===========================================================================
+   通用确认对话框（被 admin 的重置密码 / 升降级 / 禁启用 共用）
+   =========================================================================== */
+let _confirmCallback = null;
+function showConfirm({ title, body, requireInput, inputLabel, inputDefault, inputPlaceholder, confirmText, danger, onConfirm }) {
+  document.getElementById('confirm-title').textContent = title || '确认';
+  document.getElementById('confirm-body').innerHTML = body || '';
+  const inputRow = document.getElementById('confirm-input-row');
+  const input = document.getElementById('confirm-input');
+  inputRow.hidden = !requireInput;
+  if (requireInput) {
+    document.getElementById('confirm-input-label').textContent = inputLabel || '';
+    input.value = inputDefault || '';
+    input.placeholder = inputPlaceholder || '';
+    setTimeout(() => input.focus(), 50);
+    // 回车提交
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); onConfirmOk(); }
+    };
+  }
+  const okBtn = document.getElementById('confirm-ok-btn');
+  okBtn.textContent = confirmText || '确认';
+  // danger=true → red 按钮；否则 primary
+  okBtn.classList.toggle('danger', !!danger);
+  okBtn.classList.toggle('primary', !danger);
+  _confirmCallback = onConfirm;
+  openModal('confirm-modal');
+}
+async function onConfirmOk() {
+  if (!_confirmCallback) { closeModal('confirm-modal'); return; }
+  const inputRow = document.getElementById('confirm-input-row');
+  const arg = inputRow.hidden ? true : document.getElementById('confirm-input').value;
+  const okBtn = document.getElementById('confirm-ok-btn');
+  okBtn.disabled = true;
+  try {
+    const ok = await _confirmCallback(arg);
+    if (ok !== false) closeModal('confirm-modal');
+  } catch (e) {
+    alert(e.message || '操作失败');
+  } finally {
+    okBtn.disabled = false;
+  }
+}
+
+/* ===========================================================================
+   __DELETED_TASKS_MODULE_PLACEHOLDER__
+   原 PR2 的"顶部任务切换器 / Welcome modal / 任务管理 modal" 一整套已删。
+   任务的"创建/重命名/删除/切换"现在统一交给 Tab 1 的「会话栏」执行 ——
+   每个会话即一个后端任务（见 SESSION MANAGEMENT 块）。
+   =========================================================================== */
+// ---- 自动保存到服务器（fire-and-forget，失败只 log 不阻塞 UI） ----
+// 通用：把 fetch response 转成"成功 = 返回 json / 失败 = throw 带后端 error"
+async function _expectOk(r, fallbackMsg) {
+  if (r.ok) {
+    return await r.json().catch(() => ({}));
+  }
+  let detail = '';
+  try {
+    const d = await r.json();
+    detail = d.error || d.message || '';
+  } catch {}
+  const code = r.status;
+  throw new Error(`${fallbackMsg}（HTTP ${code}${detail ? ' · ' + detail : ''}）`);
+}
+
+async function autoSaveMasterResume(contentMd) {
+  if (!state.currentTaskId || !contentMd) throw new Error('NO_TASK_OR_CONTENT');
+  const r = await authedFetch(BACKEND_URL + '/tasks/' + state.currentTaskId + '/resumes', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ content_md: contentMd, source: 'chat' }),
+  });
+  const data = await _expectOk(r, '主简历保存失败');
+  return data.resume;
+}
+
+async function autoSaveCritique(companyTargetId, contentMd) {
+  if (!companyTargetId || !contentMd) throw new Error('NO_COMPANY_OR_CONTENT');
+  const r = await authedFetch(BACKEND_URL + '/companies/' + companyTargetId + '/critique', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ content_md: contentMd }),
+  });
+  return await _expectOk(r, '公司诊断保存失败');
+}
+
+async function autoSaveTailoredResume(companyTargetId, contentMd) {
+  if (!companyTargetId || !contentMd) throw new Error('NO_COMPANY_OR_CONTENT');
+  const r = await authedFetch(BACKEND_URL + '/companies/' + companyTargetId + '/tailored-resumes', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ content_md: contentMd }),
+  });
+  return await _expectOk(r, '特化简历保存失败');
+}
+
+async function autoSaveInterviewKit(companyTargetId, kitType, contentMd) {
+  if (!companyTargetId || !contentMd) throw new Error('NO_COMPANY_OR_CONTENT');
+  const r = await authedFetch(BACKEND_URL + '/companies/' + companyTargetId + '/interview-kit', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ kit_type: kitType, content_md: contentMd }),
+  });
+  return await _expectOk(r, `面试包-${kitType} 保存失败`);
+}
+
+/* ===========================================================================
+   PR3: 钱包 / 积分计费
+   =========================================================================== */
+function updateBalanceDisplay(newBalance) {
+  if (typeof newBalance !== 'number') return;
+  if (state.currentUser) state.currentUser.points_balance = newBalance;
+  const el = document.getElementById('balance-num');
+  if (el) el.textContent = newBalance;
+}
+
+// 统一处理 402（积分不足）— 在 authedFetch 基础上拦截
+async function billedFetch(url, options) {
+  const r = await authedFetch(url, options);
+  if (r.status === 402) {
+    let data = {};
+    try { data = await r.json(); } catch {}
+    document.getElementById('insuf-cost').textContent = (data.cost || '?') + ' 积分';
+    document.getElementById('insuf-balance').textContent = (data.balance != null ? data.balance : '?') + ' 积分';
+    document.getElementById('insuf-action').textContent = data.action_label || data.action_key || '—';
+    openModal('insufficient-modal');
+    throw new Error('INSUFFICIENT_POINTS');
+  }
+  // 成功 → 提取 balance 并更新顶部 pill
+  if (r.ok && r.headers.get('content-type', '').includes('application/json')) {
+    // 不直接 await r.json() 以免消费 body；让调用方自己解 JSON 时刷新
+  }
+  return r;
+}
+
+// 包一层：从 JSON 响应里提取 balance 并刷新 UI
+function maybeRefreshBalance(jsonData) {
+  if (jsonData && typeof jsonData.balance === 'number') {
+    updateBalanceDisplay(jsonData.balance);
+  }
+}
+
+let _walletState = {
+  data: null,
+  loaded: false,
+};
+
+async function openWallet(initialPane) {
+  openModal('wallet-modal');
+  if (initialPane) switchWalletTab(initialPane);
+  else switchWalletTab('redeem');
+  await loadWallet();
+  // 价目表只拉一次
+  if (!_walletState.rulesLoaded) await loadBillingRules();
+}
+
+function switchWalletTab(name) {
+  document.querySelectorAll('.wallet-sub-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.wp === name);
+  });
+  ['redeem','txns','bytask','recharges','rules'].forEach(p => {
+    document.getElementById('wallet-pane-' + p).hidden = (p !== name);
+  });
+}
+
+async function loadWallet() {
+  try {
+    const r = await authedFetch(BACKEND_URL + '/me/wallet');
+    if (!r.ok) throw new Error('加载钱包失败 ' + r.status);
+    const data = await r.json();
+    _walletState.data = data;
+    _walletState.loaded = true;
+    renderWallet(data);
+  } catch (e) {
+    console.warn('loadWallet failed', e);
+  }
+}
+
+function renderWallet(data) {
+  document.getElementById('wallet-balance-num').textContent = data.balance;
+  updateBalanceDisplay(data.balance);
+
+  // 消费明细
+  const txnList = document.getElementById('txn-list');
+  if (!data.transactions.length) {
+    txnList.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:20px;">暂无记录</div>';
+  } else {
+    txnList.innerHTML = data.transactions.map(t => {
+      const isDebit = t.delta < 0;
+      const sign = isDebit ? '' : '+';
+      const reason = humanizeReason(t.reason);
+      return `<div class="txn-row">
+        <div class="tx-time">${t.created_at}</div>
+        <div class="tx-main">
+          <div class="tx-reason">${escapeHtml(reason)}</div>
+          ${t.task_title ? `<div class="tx-task">📂 ${escapeHtml(t.task_title)}</div>` : ''}
+        </div>
+        <div class="tx-delta ${isDebit ? 'debit' : 'credit'}">${sign}${t.delta}</div>
+        <div class="tx-balance">→ ${t.balance_after}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // 按任务汇总
+  const btList = document.getElementById('by-task-list');
+  if (!data.by_task.length) {
+    btList.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:20px;">暂无记录</div>';
+  } else {
+    btList.innerHTML = data.by_task.map(b => {
+      const title = b.task_title || '（账户级别，无任务）';
+      const net = (b.spent || 0) - (b.refunded || 0);
+      return `<div class="by-task-row">
+        <div>
+          <div class="bt-title">${escapeHtml(title)}</div>
+          <div class="bt-meta">${b.txn_count} 笔交易 ${b.refunded ? `· 退款 ${b.refunded}` : ''}</div>
+        </div>
+        <div class="bt-spent">-${net} 积分</div>
+      </div>`;
+    }).join('');
+  }
+
+  // 充值记录
+  const rcList = document.getElementById('recharge-list');
+  if (!data.recharges.length) {
+    rcList.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:20px;">暂无充值记录</div>';
+  } else {
+    rcList.innerHTML = data.recharges.map(r => `<div class="by-task-row">
+      <div>
+        <div class="bt-title" style="font-family:ui-monospace,monospace;">${escapeHtml(r.code)}</div>
+        <div class="bt-meta">${r.used_at}${r.note ? ' · ' + escapeHtml(r.note) : ''}</div>
+      </div>
+      <div style="color:var(--green);font-weight:600;">+${r.grant_points}</div>
+    </div>`).join('');
+  }
+}
+
+function humanizeReason(reason) {
+  if (!reason) return '';
+  if (reason === 'invitation_code_redeem') return '邀请码注册赠送';
+  if (reason === 'recharge_code_redeem') return '充值码到账';
+  if (reason.startsWith('consume:')) {
+    const k = reason.slice('consume:'.length);
+    return '消费 · ' + (BILLING_LABELS[k] || k);
+  }
+  if (reason.startsWith('refund:')) {
+    return '退款 · ' + reason.slice('refund:'.length).split(' (')[0].replace('consume:', '');
+  }
+  return reason;
+}
+
+const BILLING_LABELS = {};  // 由 loadBillingRules 填充
+
+async function loadBillingRules() {
+  try {
+    const r = await authedFetch(BACKEND_URL + '/billing-rules');
+    if (!r.ok) return;
+    const data = await r.json();
+    _walletState.rulesLoaded = true;
+    // 缓存映射
+    (data.rules || []).forEach(rule => { BILLING_LABELS[rule.action_key] = rule.label; });
+    renderBillingRules(data.rules || [], data.recharge_tiers || []);
+  } catch (e) {
+    console.warn('loadBillingRules failed', e);
+  }
+}
+
+function renderBillingRules(rules, tiers) {
+  // 价目表
+  const grid = document.getElementById('rules-grid');
+  const consume = rules.filter(r => r.category === 'consume');
+  const save = rules.filter(r => r.category === 'save');
+  const parts = [];
+  if (consume.length) {
+    parts.push('<div class="rh" style="grid-column:1/-1;">对话 / 调用类</div>');
+    consume.forEach(r => {
+      parts.push(`<div class="rk">${escapeHtml(r.label)}</div><div class="rv">${r.points_cost} 积分</div>`);
+    });
+  }
+  if (save.length) {
+    parts.push('<div class="rh" style="grid-column:1/-1;">生成 / 保存类</div>');
+    save.forEach(r => {
+      parts.push(`<div class="rk">${escapeHtml(r.label)}</div><div class="rv">${r.points_cost} 积分</div>`);
+    });
+  }
+  grid.innerHTML = parts.join('');
+
+  // 充值档位
+  const tierGrid = document.getElementById('tier-grid');
+  tierGrid.innerHTML = tiers.map(t => {
+    const rate = (t.points_total / t.amount_yuan).toFixed(1);
+    return `<div class="tier-card">
+      <div class="tc-amount">¥${t.amount_yuan}</div>
+      <div class="tc-points">${t.points_total} 积分</div>
+      ${t.points_bonus ? `<div class="tc-bonus">含赠送 ${t.points_bonus}</div>` : ''}
+      <div class="tc-rate">1 元 = ${rate} 积分</div>
+    </div>`;
+  }).join('');
+}
+
+async function submitRedeem() {
+  const codeEl = document.getElementById('redeem-input');
+  const errEl = document.getElementById('redeem-error');
+  const okEl = document.getElementById('redeem-success');
+  const btn = document.getElementById('redeem-btn');
+  errEl.hidden = true; okEl.hidden = true;
+  const code = codeEl.value.trim().toUpperCase();
+  if (!code) { errEl.textContent = '请输入兑换码'; errEl.hidden = false; return; }
+  btn.disabled = true; btn.textContent = '兑换中…';
+  try {
+    const r = await authedFetch(BACKEND_URL + '/redeem', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      errEl.textContent = data.error || ('兑换失败 ' + r.status);
+      errEl.hidden = false;
+      return;
+    }
+    okEl.textContent = `✅ ${data.message}（当前余额 ${data.balance} 积分）`;
+    okEl.hidden = false;
+    codeEl.value = '';
+    updateBalanceDisplay(data.balance);
+    // 刷新明细
+    await loadWallet();
+  } catch (e) {
+    errEl.textContent = e.message || '兑换失败';
+    errEl.hidden = false;
+  } finally {
+    btn.disabled = false; btn.textContent = '兑换';
+  }
+}
+
+/* ===========================================================================
+   PR4: 管理后台（仅 admin 角色可见）
+   =========================================================================== */
+function renderAdminEntryIfAdmin() {
+  const btn = document.getElementById('admin-shield');
+  if (!btn) return;
+  btn.hidden = !(state.currentUser && state.currentUser.role === 'admin');
+}
+
+function openAdminPanel() {
+  document.getElementById('admin-overlay').hidden = false;
+  document.getElementById('admin-sub-info').textContent =
+    state.currentUser ? `· 当前管理员：${state.currentUser.username}` : '';
+  switchAdminPane('dashboard');
+}
+function closeAdminPanel() {
+  document.getElementById('admin-overlay').hidden = true;
+}
+
+function switchAdminPane(name) {
+  document.querySelectorAll('.admin-nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.pane === name);
+  });
+  ['dashboard','users','invites','recharges'].forEach(p => {
+    document.getElementById('admin-pane-' + p).hidden = (p !== name);
+  });
+  if (name === 'dashboard') loadAdminDashboard();
+  else if (name === 'users') loadAdminUsers();
+  else if (name === 'invites') loadAdminInvites();
+  else if (name === 'recharges') loadAdminRecharges();
+}
+
+async function loadAdminDashboard() {
+  try {
+    const r = await authedFetch(BACKEND_URL + '/admin/dashboard');
+    if (!r.ok) throw new Error('加载失败 ' + r.status);
+    const data = await r.json();
+    renderDashboard(data);
+  } catch (e) {
+    console.warn('loadAdminDashboard failed', e);
+  }
+}
+
+function renderDashboard(data) {
+  const s = data.stats;
+  const cards = [
+    { label: '用户总数', value: s.users_total, sub: `今日新增 ${s.users_today} · 管理员 ${s.admins}`, accent: false },
+    { label: '余额池', value: s.balance_pool, sub: '所有用户余额合计', accent: true },
+    { label: '累计消耗', value: s.consumed_total, sub: '已扣减积分总数' },
+    { label: '累计充值', value: s.recharged_total, sub: '注册赠送 + 充值码' },
+    { label: '任务总数', value: s.tasks_total, sub: '所有用户的活动任务' },
+    { label: '未用邀请码', value: s.invites_unused, sub: '随时可用于注册', warn: true },
+    { label: '未用充值码', value: s.recharges_unused, sub: '随时可用于充值', warn: true },
+  ];
+  document.getElementById('dashboard-stats').innerHTML = cards.map(c =>
+    `<div class="stat-card ${c.accent ? 'accent' : ''} ${c.warn ? 'warn' : ''}">
+      <div class="sc-label">${c.label}</div>
+      <div class="sc-value">${c.value}</div>
+      <div class="sc-sub">${c.sub}</div>
+    </div>`
+  ).join('');
+
+  // 最近交易
+  const recent = document.getElementById('dashboard-recent');
+  if (!data.recent_txns.length) {
+    recent.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:14px;">暂无交易</div>';
+  } else {
+    recent.innerHTML = `<div style="overflow-x:auto;"><table class="admin-table">
+      <thead><tr><th>时间</th><th>用户</th><th>变动</th><th>余额</th><th>原因</th><th>任务</th></tr></thead>
+      <tbody>${data.recent_txns.map(t => {
+        const sign = t.delta < 0 ? '' : '+';
+        const cls = t.delta < 0 ? 'color:var(--red);' : 'color:var(--green);';
+        return `<tr>
+          <td style="font-size:11px;">${t.created_at}</td>
+          <td>${escapeHtml(t.username)}</td>
+          <td style="${cls}font-weight:600;">${sign}${t.delta}</td>
+          <td>${t.balance_after}</td>
+          <td>${escapeHtml(humanizeReason(t.reason))}</td>
+          <td>${t.task_title ? escapeHtml(t.task_title) : '-'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+  }
+}
+
+let _userSearchTimer = null;
+function loadAdminUsersDebounced() {
+  clearTimeout(_userSearchTimer);
+  _userSearchTimer = setTimeout(loadAdminUsers, 250);
+}
+
+async function loadAdminUsers() {
+  const q = document.getElementById('user-search').value.trim();
+  const role = document.getElementById('user-role-filter').value;
+  const status = document.getElementById('user-status-filter').value;
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (role) params.set('role', role);
+  if (status) params.set('status', status);
+  try {
+    const r = await authedFetch(BACKEND_URL + '/admin/users?' + params.toString());
+    if (!r.ok) throw new Error('加载失败 ' + r.status);
+    const data = await r.json();
+    renderUserTable(data.users);
+  } catch (e) {
+    console.warn('loadAdminUsers failed', e);
+  }
+}
+
+function renderUserTable(users) {
+  const tbody = document.querySelector('#user-table tbody');
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:20px;">没找到</td></tr>';
+    return;
+  }
+  tbody.innerHTML = users.map(u => `<tr>
+    <td>${u.id}</td>
+    <td><strong style="color:var(--text);">${escapeHtml(u.username)}</strong></td>
+    <td><span class="role-tag ${u.role}">${u.role}</span></td>
+    <td><span class="status-tag ${u.status}">${u.status}</span></td>
+    <td style="font-variant-numeric:tabular-nums;">${u.points_balance}</td>
+    <td>${u.task_count}</td>
+    <td style="font-size:11px;">${u.created_at}</td>
+    <td style="font-size:11px;">${u.last_login_at || '-'}</td>
+    <td>
+      <button class="row-btn" onclick="openUserEdit(${u.id})">详情</button>
+      <button class="row-btn" onclick="openAdjust(${u.id}, '${escapeHtml(u.username)}', ${u.points_balance})">调余额</button>
+      <button class="row-btn" onclick="toggleUserRole(${u.id}, '${u.role}')">${u.role === 'admin' ? '降级' : '升级'}</button>
+      <button class="row-btn ${u.status === 'active' ? 'danger' : ''}" onclick="toggleUserStatus(${u.id}, '${u.status}')">${u.status === 'active' ? '禁用' : '启用'}</button>
+    </td>
+  </tr>`).join('');
+}
+
+async function openUserEdit(userId) {
+  openModal('user-edit-modal');
+  const body = document.getElementById('ue-body');
+  body.innerHTML = '加载中…';
+  try {
+    const r = await authedFetch(BACKEND_URL + '/admin/users/' + userId);
+    if (!r.ok) throw new Error('加载失败 ' + r.status);
+    const data = await r.json();
+    const u = data.user;
+    document.getElementById('ue-title').textContent = `用户 #${u.id} · ${u.username}`;
+    body.innerHTML = `
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:12px;margin-bottom:16px;">
+        <span style="color:var(--text-dim);">角色</span><span><span class="role-tag ${u.role}">${u.role}</span></span>
+        <span style="color:var(--text-dim);">状态</span><span><span class="status-tag ${u.status}">${u.status}</span></span>
+        <span style="color:var(--text-dim);">余额</span><span style="color:var(--green);font-weight:600;font-size:14px;">${u.points_balance} 积分</span>
+        <span style="color:var(--text-dim);">任务</span><span>${data.tasks.length} 个</span>
+        <span style="color:var(--text-dim);">注册时间</span><span>${u.created_at}</span>
+        <span style="color:var(--text-dim);">最近登录</span><span>${u.last_login_at || '从未登录'}</span>
+      </div>
+      <h4 style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">最近交易（${data.recent_txns.length}）</h4>
+      <div style="max-height:200px;overflow-y:auto;font-size:11px;border:1px solid var(--border);border-radius:6px;">
+        ${data.recent_txns.length ? data.recent_txns.map(t => {
+          const sign = t.delta < 0 ? '' : '+';
+          const cls = t.delta < 0 ? 'color:var(--red);' : 'color:var(--green);';
+          return `<div style="display:flex;gap:10px;padding:6px 10px;border-bottom:1px solid var(--border);">
+            <span style="color:var(--text-dim);width:130px;">${t.created_at}</span>
+            <span style="flex:1;">${escapeHtml(humanizeReason(t.reason))}</span>
+            <span style="${cls}font-weight:600;width:60px;text-align:right;">${sign}${t.delta}</span>
+            <span style="color:var(--text-dim);width:60px;text-align:right;">→ ${t.balance_after}</span>
+          </div>`;
+        }).join('') : '<div style="padding:14px;text-align:center;color:var(--text-dim);">无</div>'}
+      </div>
+      <div style="margin-top:16px;display:flex;gap:8px;">
+        <button class="modal-btn" onclick="closeModal('user-edit-modal');openAdjust(${u.id}, '${escapeHtml(u.username)}', ${u.points_balance})">调余额</button>
+        <button class="modal-btn" onclick="resetUserPassword(${u.id})">重置密码</button>
+      </div>
+    `;
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--red);">' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+let _adjustTargetId = null;
+function openAdjust(userId, username, currentBalance) {
+  _adjustTargetId = userId;
+  document.getElementById('adjust-context').innerHTML =
+    `调整 <strong style="color:var(--text);">${escapeHtml(username)}</strong> 的积分（当前 ${currentBalance}）`;
+  document.getElementById('adjust-delta').value = '';
+  document.getElementById('adjust-reason').value = '';
+  document.getElementById('adjust-error').hidden = true;
+  openModal('adjust-modal');
+  setTimeout(() => document.getElementById('adjust-delta').focus(), 50);
+}
+
+async function submitAdjust() {
+  const delta = parseInt(document.getElementById('adjust-delta').value, 10);
+  const reason = document.getElementById('adjust-reason').value.trim();
+  const err = document.getElementById('adjust-error');
+  err.hidden = true;
+  if (!Number.isFinite(delta) || delta === 0) {
+    err.textContent = 'delta 必须是非零整数'; err.hidden = false; return;
+  }
+  if (!reason) {
+    err.textContent = '原因必填（用于审计）'; err.hidden = false; return;
+  }
+  try {
+    const r = await authedFetch(BACKEND_URL + '/admin/users/' + _adjustTargetId + '/adjust', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ delta, reason }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { err.textContent = data.error || '调整失败'; err.hidden = false; return; }
+    closeModal('adjust-modal');
+    toast(`已调整：${delta > 0 ? '+' : ''}${delta}，新余额 ${data.new_balance}`);
+    loadAdminUsers();
+  } catch (e) {
+    err.textContent = e.message || '失败'; err.hidden = false;
+  }
+}
+
+async function toggleUserRole(userId, currentRole) {
+  const next = currentRole === 'admin' ? 'user' : 'admin';
+  showConfirm({
+    title: next === 'admin' ? '升级为管理员？' : '降级为普通用户？',
+    body: next === 'admin'
+      ? '该用户将获得完整的管理后台权限。'
+      : '该用户将失去管理后台权限。',
+    confirmText: next === 'admin' ? '升级' : '降级',
+    danger: false,
+    onConfirm: async () => {
+      const r = await authedFetch(BACKEND_URL + '/admin/users/' + userId, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ role: next }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        alert(d.error || '失败'); return false;
+      }
+      toast('角色已变更为 ' + next);
+      loadAdminUsers();
+      return true;
+    },
+  });
+}
+
+async function toggleUserStatus(userId, currentStatus) {
+  const next = currentStatus === 'active' ? 'disabled' : 'active';
+  showConfirm({
+    title: next === 'disabled' ? '禁用用户？' : '启用用户？',
+    body: next === 'disabled'
+      ? '该用户将立即被踢下线，无法再登录或调用任何接口。已有数据不变。'
+      : '允许该用户登录使用。',
+    confirmText: next === 'disabled' ? '禁用' : '启用',
+    danger: next === 'disabled',
+    onConfirm: async () => {
+      const r = await authedFetch(BACKEND_URL + '/admin/users/' + userId, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: next }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        alert(d.error || '失败'); return false;
+      }
+      toast('状态已变更为 ' + next);
+      loadAdminUsers();
+      return true;
+    },
+  });
+}
+
+function resetUserPassword(userId) {
+  showConfirm({
+    title: '重置用户密码',
+    body: '为该用户设置一个新密码（至少 6 位）。设置后该用户原密码失效、原会话也会被强制踢下线。',
+    requireInput: true,
+    inputLabel: '新密码',
+    confirmText: '确认重置',
+    danger: true,
+    onConfirm: async (pwd) => {
+      if (!pwd || pwd.length < 6) { alert('密码至少 6 位'); return false; }
+      const r = await authedFetch(BACKEND_URL + '/admin/users/' + userId + '/reset-password', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ new_password: pwd }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        alert(d.error || '失败'); return false;
+      }
+      toast('密码已重置（用户需重新登录）');
+      return true;
+    },
+  });
+}
+
+// ---- 邀请码 ----
+async function loadAdminInvites() {
+  const status = document.getElementById('invite-status-filter').value;
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  try {
+    const r = await authedFetch(BACKEND_URL + '/admin/invites?' + params.toString());
+    if (!r.ok) throw new Error('加载失败 ' + r.status);
+    const data = await r.json();
+    renderInviteTable(data.invites);
+  } catch (e) {
+    console.warn('loadAdminInvites failed', e);
+  }
+}
+
+function renderInviteTable(invites) {
+  const tbody = document.querySelector('#invite-table tbody');
+  if (!invites.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px;">无</td></tr>';
+    return;
+  }
+  tbody.innerHTML = invites.map(i => `<tr>
+    <td><span class="code-cell">${i.code}</span><button class="copy-btn" onclick="copyText('${i.code}')">复制</button></td>
+    <td>${i.grant_points}</td>
+    <td><span class="status-tag ${i.status}">${i.status}</span></td>
+    <td>${i.used_by_username ? escapeHtml(i.used_by_username) : '-'}</td>
+    <td style="font-size:11px;">${i.expires_at || '-'}</td>
+    <td>${i.note ? escapeHtml(i.note) : '-'}</td>
+    <td>${i.status === 'unused' ? `<button class="row-btn danger" onclick="revokeInvite('${i.code}')">撤销</button>` : '-'}</td>
+  </tr>`).join('');
+}
+
+function openCreateInviteModal() {
+  document.getElementById('ci-points').value = 100;
+  document.getElementById('ci-count').value = 1;
+  document.getElementById('ci-days').value = 30;
+  document.getElementById('ci-note').value = '';
+  document.getElementById('ci-error').hidden = true;
+  document.getElementById('ci-result').hidden = true;
+  openModal('create-invite-modal');
+}
+
+async function submitCreateInvite() {
+  const points = parseInt(document.getElementById('ci-points').value, 10);
+  const count = parseInt(document.getElementById('ci-count').value, 10);
+  const days = parseInt(document.getElementById('ci-days').value, 10);
+  const note = document.getElementById('ci-note').value.trim();
+  const err = document.getElementById('ci-error');
+  err.hidden = true;
+  if (!Number.isFinite(points) || points < 0) {
+    err.textContent = '积分必须 >= 0'; err.hidden = false; return;
+  }
+  if (!Number.isFinite(count) || count < 1) {
+    err.textContent = '张数 >= 1'; err.hidden = false; return;
+  }
+  try {
+    const r = await authedFetch(BACKEND_URL + '/admin/invites', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ points, count, days, note: note || null }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { err.textContent = data.error || '失败'; err.hidden = false; return; }
+    const result = document.getElementById('ci-result');
+    result.innerHTML = `✅ 已生成 ${data.codes.length} 张（每张 ${data.points} 积分，${data.days} 天有效）：<br><br>`
+      + data.codes.map(c => `<div style="display:flex;justify-content:space-between;padding:3px 0;">
+          <span>${c}</span>
+          <button class="copy-btn" onclick="copyText('${c}')">复制</button>
+        </div>`).join('');
+    result.hidden = false;
+    loadAdminInvites();
+  } catch (e) {
+    err.textContent = e.message; err.hidden = false;
+  }
+}
+
+async function revokeInvite(code) {
+  if (!confirm('撤销邀请码 ' + code + '？该码立即不可用。')) return;
+  const r = await authedFetch(BACKEND_URL + '/admin/invites/' + code + '/revoke', { method: 'POST' });
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    alert(d.error || '失败'); return;
+  }
+  toast('已撤销 ' + code);
+  loadAdminInvites();
+}
+
+// ---- 充值码 ----
+async function loadAdminRecharges() {
+  const status = document.getElementById('recharge-status-filter').value;
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  try {
+    const r = await authedFetch(BACKEND_URL + '/admin/recharges?' + params.toString());
+    if (!r.ok) throw new Error('加载失败 ' + r.status);
+    const data = await r.json();
+    renderRechargeTable(data.recharges);
+  } catch (e) {
+    console.warn('loadAdminRecharges failed', e);
+  }
+}
+
+function renderRechargeTable(recharges) {
+  const tbody = document.querySelector('#recharge-table tbody');
+  if (!recharges.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px;">无</td></tr>';
+    return;
+  }
+  tbody.innerHTML = recharges.map(r => {
+    const kind = r.bound_user_id ? `实名（${escapeHtml(r.bound_username || ('id='+r.bound_user_id))}）` : '通用';
+    const user = r.used_by_username ? escapeHtml(r.used_by_username) : (r.bound_username ? '<span style="color:var(--text-dim);">待用</span>' : '-');
+    return `<tr>
+      <td><span class="code-cell">${r.code}</span><button class="copy-btn" onclick="copyText('${r.code}')">复制</button></td>
+      <td>${r.grant_points}</td>
+      <td><span class="status-tag ${r.status}">${r.status}</span></td>
+      <td>${kind}</td>
+      <td>${user}</td>
+      <td style="font-size:11px;">${r.expires_at || '-'}</td>
+      <td>${r.note ? escapeHtml(r.note) : '-'}</td>
+      <td>${r.status === 'unused' ? `<button class="row-btn danger" onclick="revokeRecharge('${r.code}')">撤销</button>` : '-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openCreateRechargeModal() {
+  document.getElementById('cr-points').value = 100;
+  document.getElementById('cr-count').value = 1;
+  document.getElementById('cr-days').value = 60;
+  document.getElementById('cr-kind').value = 'universal';
+  document.getElementById('cr-bound-row').hidden = true;
+  document.getElementById('cr-bound').value = '';
+  document.getElementById('cr-note').value = '';
+  document.getElementById('cr-error').hidden = true;
+  document.getElementById('cr-result').hidden = true;
+  openModal('create-recharge-modal');
+}
+
+async function submitCreateRecharge() {
+  const points = parseInt(document.getElementById('cr-points').value, 10);
+  const count = parseInt(document.getElementById('cr-count').value, 10);
+  const days = parseInt(document.getElementById('cr-days').value, 10);
+  const kind = document.getElementById('cr-kind').value;
+  const bound = document.getElementById('cr-bound').value.trim();
+  const note = document.getElementById('cr-note').value.trim();
+  const err = document.getElementById('cr-error');
+  err.hidden = true;
+  if (!Number.isFinite(points) || points <= 0) {
+    err.textContent = '积分必须 > 0'; err.hidden = false; return;
+  }
+  if (kind === 'bound' && !bound) {
+    err.textContent = '实名券必须填绑定的用户名'; err.hidden = false; return;
+  }
+  const payload = { points, count, days, note: note || null };
+  if (kind === 'bound') payload.bound_username = bound;
+  try {
+    const r = await authedFetch(BACKEND_URL + '/admin/recharges', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { err.textContent = data.error || '失败'; err.hidden = false; return; }
+    const result = document.getElementById('cr-result');
+    const kindLabel = data.kind === 'bound' ? `实名（user_id=${data.bound_user_id}）` : '通用';
+    result.innerHTML = `✅ 已生成 ${data.codes.length} 张充值码（${kindLabel}，每张 ${data.points} 积分，${data.days} 天有效）：<br><br>`
+      + data.codes.map(c => `<div style="display:flex;justify-content:space-between;padding:3px 0;">
+          <span>${c}</span>
+          <button class="copy-btn" onclick="copyText('${c}')">复制</button>
+        </div>`).join('');
+    result.hidden = false;
+    loadAdminRecharges();
+  } catch (e) {
+    err.textContent = e.message; err.hidden = false;
+  }
+}
+
+async function revokeRecharge(code) {
+  if (!confirm('撤销充值码 ' + code + '？')) return;
+  const r = await authedFetch(BACKEND_URL + '/admin/recharges/' + code + '/revoke', { method: 'POST' });
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    alert(d.error || '失败'); return;
+  }
+  toast('已撤销 ' + code);
+  loadAdminRecharges();
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    toast('已复制：' + text);
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('已复制：' + text);
+  });
+}
+
+// ---- 工具函数：toast（轻提示）----
+let _toastTimer = null;
+function toast(msg) {
+  let el = document.getElementById('rc-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'rc-toast';
+    el.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--bg-elevated);color:var(--text);border:1px solid var(--border-strong);border-radius:6px;padding:10px 16px;font-size:12px;z-index:50001;box-shadow:0 10px 30px rgba(0,0,0,0.5);opacity:0;transition:opacity 0.2s;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2200);
+}
 
 /* ===========================================================================
    MODE INDICATOR
@@ -2592,6 +4961,10 @@ function renderModelList() {
    AI 调用路由：启用用户模型走 /proxy-chat，否则 fallback 到本机 Claude Code
    =========================================================================== */
 async function callProxyChat(systemPrompt, userMessage, messages) {
+  if (!state.currentTaskId) {
+    toast('请先创建或选择一个任务');
+    throw new Error('NO_TASK');
+  }
   const model = getEnabledModel();
   if (!model) throw new Error('未找到启用的模型');
   const body = {
@@ -2605,7 +4978,9 @@ async function callProxyChat(systemPrompt, userMessage, messages) {
   } else {
     body.user = userMessage;
   }
-  const resp = await fetch(BACKEND_URL + '/proxy-chat', {
+  // PR2: 注入当前任务 id（让后端把这次调用归属到该任务）
+  body.task_id = state.currentTaskId;
+  const resp = await billedFetch(BACKEND_URL + '/proxy-chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
@@ -2617,6 +4992,7 @@ async function callProxyChat(systemPrompt, userMessage, messages) {
   }
   const data = await resp.json();
   if (data.error) throw new Error(data.error);
+  maybeRefreshBalance(data);  // PR3: 余额刷新
   return data.text;
 }
 
@@ -2672,10 +5048,15 @@ async function callClaudeOrMock(systemPrompt, userMessage, mockOutput, mockDelay
 }
 
 async function callClaudeBackend(systemPrompt, userMessage) {
-  const response = await fetch(BACKEND_URL + '/generate', {
+  if (!state.currentTaskId) {
+    toast('请先创建或选择一个任务');
+    throw new Error('NO_TASK');
+  }
+  const reqBody = { system: systemPrompt, user: userMessage, task_id: state.currentTaskId };
+  const response = await billedFetch(BACKEND_URL + '/generate', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ system: systemPrompt, user: userMessage }),
+    body: JSON.stringify(reqBody),
   });
   if (!response.ok) {
     let errMsg = '后端错误 (' + response.status + ')';
@@ -2793,15 +5174,9 @@ function showError(elementId, error) {
   el.innerHTML = '<div style="color: var(--red); padding: 12px; background: #fee2e2; border-radius: 6px;"><strong>出错了：</strong>' + error + '</div>';
 }
 
-function copyText(elementId) {
-  const el = document.getElementById(elementId);
-  const text = el.innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    const orig = event.target.textContent;
-    event.target.textContent = '✓ 已复制';
-    setTimeout(() => { event.target.textContent = orig; }, 1500);
-  });
-}
+// 注：旧版 copyText(elementId) 已删除（与 admin 模块的 copyText(text) 同名冲突，
+// 旧版按 element id 读 innerText，被后面定义的"直接复制文本"版本覆盖时会炸。
+// 现已统一为 4684 行的 copyText(text)）
 
 /* ===========================================================================
    SYSTEM PROMPTS (compressed from SKILL.md)
@@ -3662,6 +6037,10 @@ async function sendChatMessage(forcedText) {
     alert('后端未启动 — 无法对话。\n请在终端运行：\npython3 ~/Desktop/resume-coach-server.py');
     return;
   }
+  if (!state.currentTaskId) {
+    alert('请先创建或选择一个任务（顶部 + 按钮）');
+    return;
+  }
 
   // 拼接发给后端的 user content（含附件提取内容/图片路径）
   const parts = [];
@@ -3692,8 +6071,10 @@ async function sendChatMessage(forcedText) {
   // 准备 AI 请求 promise（不 await，让游戏先跑）
   // 路由：有启用模型 → /proxy-chat；否则 → /chat（本机 Claude Code）
   const enabledModel = (typeof getEnabledModel === 'function') ? getEnabledModel() : null;
+  // PR2: 把 task_id 加进 body（如果有当前任务）
+  const _taskBody = state.currentTaskId ? { task_id: state.currentTaskId } : {};
   const aiPromise = enabledModel
-    ? fetch(BACKEND_URL + '/proxy-chat', {
+    ? billedFetch(BACKEND_URL + '/proxy-chat', {
         method: 'POST',
         headers: {'content-type': 'application/json'},
         body: JSON.stringify({
@@ -3702,14 +6083,16 @@ async function sendChatMessage(forcedText) {
           modelName: enabledModel.modelName,
           system: PROMPT_BUILD_CHAT,
           messages: buildChat.messages,
+          ..._taskBody,
         }),
       })
-    : fetch(BACKEND_URL + '/chat', {
+    : billedFetch(BACKEND_URL + '/chat', {
         method: 'POST',
         headers: {'content-type': 'application/json'},
         body: JSON.stringify({
           messages: buildChat.messages,
           system: PROMPT_BUILD_CHAT,
+          ..._taskBody,
         }),
       });
 
@@ -3752,6 +6135,25 @@ async function sendChatMessage(forcedText) {
     const aiText = (data.text || '').trim();
     buildChat.messages.push({role: 'assistant', content: aiText});
     persistCurrentSession();
+    // 把刚才的 user + assistant 两条消息存到后端（防止丢失）
+    if (state.currentTaskId && buildChat.messages.length >= 2) {
+      const userMsg = buildChat.messages[buildChat.messages.length - 2];
+      const aiMsg = buildChat.messages[buildChat.messages.length - 1];
+      persistChatMessagesToBackend(state.currentTaskId, [userMsg, aiMsg])
+        .catch(e => console.warn('persistChatMessagesToBackend failed:', e));
+    }
+    // PR3: 余额刷新（响应体里带了 balance）
+    maybeRefreshBalance(data);
+    // PR2: 如果是阶段 D 的 [RESUME] 输出，自动落库为该任务的新版主简历
+    if (aiText.startsWith('[RESUME]') && state.currentTaskId) {
+      const md = aiText.slice('[RESUME]'.length).trim();
+      autoSaveMasterResume(md).then(resume => {
+        if (resume) toast(`✓ 主简历已保存到云端 (v${resume.version_no})`);
+      }).catch(e => {
+        console.warn('auto-save master resume failed:', e);
+        alert('⚠️ 主简历已生成但保存到云端失败：\n' + e.message + '\n\n下次登录可能看不到。请检查网络或积分。');
+      });
+    }
     renderAssistantMessage(aiText);
   } catch (err) {
     renderErrorMessage(err.message);
@@ -5883,12 +8285,15 @@ function waitForUserToFinishGame(game) {
 }
 
 /* ===========================================================================
-   SESSION MANAGEMENT (持久化 + 多会话切换)
+   SESSION MANAGEMENT
+   一个 session = 一个求职方向（"任务"）= 一个后端 tasks 表的 row
+   session 在 localStorage 里存对话历史，taskId 字段是后端的 task.id 主键
+   AI 调用都用 state.currentTaskId（= 当前 session.taskId）
    =========================================================================== */
 const STORAGE_KEY = 'resumeCoach.sessions.v1';
 
 const sessions = {
-  list: {},          // {id: {id, name, createdAt, updatedAt, messages}}
+  list: {},          // {id: {id, name, taskId, createdAt, updatedAt, messages}}
   currentId: null,
 };
 
@@ -5916,75 +8321,177 @@ function saveSessionsToStorage() {
   }
 }
 
-function defaultSessionName() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const h = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  return '新对话 ' + m + '/' + day + ' ' + h + ':' + min;
+// 后端建一个 task，返回 task_id（失败抛错）
+async function createBackendTask(title) {
+  const r = await authedFetch(BACKEND_URL + '/tasks', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ title }),
+  });
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.error || ('创建任务失败 ' + r.status));
+  }
+  const data = await r.json();
+  return data.task.id;
 }
 
-function createSessionRecord(name) {
-  const id = 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-  const ts = Date.now();
-  sessions.list[id] = {
-    id,
-    name: name || defaultSessionName(),
-    createdAt: ts,
-    updatedAt: ts,
-    messages: [],
-  };
-  return id;
+async function patchBackendTaskTitle(taskId, newTitle) {
+  if (!taskId) return;
+  await authedFetch(BACKEND_URL + '/tasks/' + taskId, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ title: newTitle }),
+  });
+}
+
+async function deleteBackendTask(taskId) {
+  if (!taskId) return;
+  await authedFetch(BACKEND_URL + '/tasks/' + taskId, { method: 'DELETE' });
 }
 
 function newSession() {
-  // 当前如果有未保存的输入，让用户确认
   const inp = document.getElementById('chat-input');
-  if (inp && inp.value.trim().length > 0) {
-    if (!confirm('当前输入框还有内容，新建会话会丢失。继续？')) return;
-  }
-  const id = createSessionRecord();
-  sessions.currentId = id;
-  applyCurrentSessionToUI();
-  saveSessionsToStorage();
-  refreshSessionUI();
+  const hasDraft = inp && inp.value.trim().length > 0;
+  // 站内确认 + 输入新任务名
+  const doCreate = (name) => {
+    return (async () => {
+      let taskId;
+      try {
+        taskId = await createBackendTask(name);
+      } catch (e) {
+        alert('创建任务失败：' + (e.message || e));
+        return false;
+      }
+      const id = 'sess_t' + taskId;  // 跟 initSessions 命名规则一致
+      const ts = Date.now();
+      sessions.list[id] = {
+        id, name, taskId,
+        createdAt: ts, updatedAt: ts,
+        messages: [],
+        _hydrated: true,  // 新任务无历史可拉，直接标已 hydrate
+      };
+      sessions.currentId = id;
+      state.currentTaskId = taskId;
+      applyCurrentSessionToUI();
+      saveSessionsToStorage();
+      refreshSessionUI();
+      if (typeof tab2Load === 'function') {
+        tab2Load().catch(e => console.warn('tab2Load on newSession failed', e));
+      }
+      return true;
+    })();
+  };
+
+  showConfirm({
+    title: '新建任务',
+    body: '一个任务 = 一个求职方向。任务名给个你能一眼认出来的标签即可。'
+      + (hasDraft ? '<div style="margin-top:10px;color:var(--yellow);font-size:12px;">⚠️ 当前输入框还有内容，新建任务后会丢失。</div>' : ''),
+    requireInput: true,
+    inputLabel: '任务名',
+    inputPlaceholder: '比如：投 AI 产品经理',
+    confirmText: '创建',
+    danger: false,
+    onConfirm: async (name) => {
+      name = (name || '').trim();
+      if (!name) { alert('任务名不能为空'); return false; }
+      return await doCreate(name);
+    },
+  });
 }
 
-function switchSession(id) {
+async function switchSession(id) {
   if (!sessions.list[id]) return;
-  // 先把当前 buildChat 状态保存
-  persistCurrentSession();
   sessions.currentId = id;
+  state.currentTaskId = sessions.list[id].taskId || null;
+  // 后端拉这个任务的对话历史（如果还没拉过）
+  await hydrateSessionMessages(id);
   applyCurrentSessionToUI();
   saveSessionsToStorage();
   refreshSessionUI();
+  // 任务切换 → Tab 2 公司列表重新拉
+  if (typeof tab2Load === 'function') {
+    tab2Load().catch(e => console.warn('tab2Load on task switch failed', e));
+  }
+  if (typeof refreshInterviewSelector === 'function') {
+    refreshInterviewSelector().catch(()=>{});
+  }
 }
 
 function renameSession() {
   const sess = sessions.list[sessions.currentId];
   if (!sess) return;
-  const name = prompt('重命名当前会话', sess.name);
-  if (!name || !name.trim()) return;
-  sess.name = name.trim();
-  saveSessionsToStorage();
-  refreshSessionUI();
+  showConfirm({
+    title: '重命名任务',
+    body: '改个名字（任务下的所有数据保持不变）',
+    requireInput: true,
+    inputLabel: '新任务名',
+    inputDefault: sess.name,
+    confirmText: '保存',
+    danger: false,
+    onConfirm: async (name) => {
+      name = (name || '').trim();
+      if (!name) { alert('任务名不能为空'); return false; }
+      if (name === sess.name) return true; // 没改
+      try {
+        await patchBackendTaskTitle(sess.taskId, name);
+      } catch (e) {
+        console.warn('后端重命名失败（继续本地改名）', e);
+      }
+      sess.name = name;
+      saveSessionsToStorage();
+      refreshSessionUI();
+      return true;
+    },
+  });
 }
 
 function deleteSession() {
   const sess = sessions.list[sessions.currentId];
   if (!sess) return;
-  if (!confirm('删除会话「' + sess.name + '」？\n此操作不可恢复（包含 ' + Math.ceil(sess.messages.length / 2) + ' 轮对话）')) return;
-  delete sessions.list[sessions.currentId];
-  const remaining = Object.keys(sessions.list);
-  if (remaining.length > 0) {
-    sessions.currentId = remaining.sort((a, b) => sessions.list[b].updatedAt - sessions.list[a].updatedAt)[0];
-  } else {
-    sessions.currentId = createSessionRecord();
-  }
-  applyCurrentSessionToUI();
-  saveSessionsToStorage();
-  refreshSessionUI();
+  showConfirm({
+    title: '⚠️ 删除任务',
+    body: `这将永久删除任务「<strong style="color:var(--text);">${escapeHtml(sess.name)}</strong>」及其下所有数据：
+      <ul style="margin-top:10px;padding-left:20px;line-height:1.9;color:var(--text-dim);">
+        <li>所有对话历史</li>
+        <li>所有主简历版本</li>
+        <li>所有目标公司（含诊断 / 特化简历 / 面试备战包）</li>
+      </ul>
+      <div style="margin-top:10px;color:var(--red);">此操作不可恢复。</div>`,
+    requireInput: true,
+    inputLabel: `为确认删除，请输入任务名「${sess.name}」`,
+    inputPlaceholder: sess.name,
+    confirmText: '永久删除',
+    danger: true,
+    onConfirm: async (typed) => {
+      if (typed !== sess.name) {
+        alert('输入的名称与任务名不一致，已取消');
+        return false;
+      }
+      try {
+        await deleteBackendTask(sess.taskId);
+      } catch (e) {
+        alert('后端删除失败：' + (e.message || e));
+        return false;
+      }
+      delete sessions.list[sessions.currentId];
+      const remaining = Object.keys(sessions.list);
+      if (remaining.length > 0) {
+        const nextId = remaining.sort((a, b) => sessions.list[b].updatedAt - sessions.list[a].updatedAt)[0];
+        sessions.currentId = nextId;
+        state.currentTaskId = sessions.list[nextId].taskId || null;
+      } else {
+        sessions.currentId = null;
+        state.currentTaskId = null;
+      }
+      applyCurrentSessionToUI();
+      saveSessionsToStorage();
+      refreshSessionUI();
+      if (typeof tab2Load === 'function') tab2Load().catch(()=>{});
+      if (typeof refreshInterviewSelector === 'function') refreshInterviewSelector().catch(()=>{});
+      return true;
+    },
+  });
 }
 
 function persistCurrentSession() {
@@ -5998,12 +8505,42 @@ function persistCurrentSession() {
 
 function applyCurrentSessionToUI() {
   const sess = sessions.list[sessions.currentId];
-  if (!sess) return;
+  const msgs = document.getElementById('chat-messages');
+  const sendBtn = document.getElementById('chat-send-btn');
+  const inputEl = document.getElementById('chat-input');
+
+  if (!sess) {
+    // 0 任务时：消息区显示 onboarding 提示，禁用发送
+    buildChat.messages = [];
+    buildChat.pendingAttachments = [];
+    buildChat.generating = false;
+    if (msgs) {
+      msgs.classList.remove('empty');
+      msgs.innerHTML = `<div style="text-align:center;padding:60px 30px;color:var(--text-dim);">
+        <div style="font-size:42px;margin-bottom:14px;">📂</div>
+        <div style="font-size:16px;color:var(--text);font-weight:500;margin-bottom:8px;">还没有任务</div>
+        <div style="font-size:13px;line-height:1.7;max-width:420px;margin:0 auto;">
+          一个任务 = 一个求职方向。<br>
+          点上面 <strong style="color:var(--text);">"＋ 新建任务"</strong> 开始你的第一个任务。<br>
+          任务下三件事：
+          <span style="color:var(--text);">对话生成主简历</span> ·
+          <span style="color:var(--text);">公司诊断 + 特化简历</span> ·
+          <span style="color:var(--text);">面试备战</span>
+        </div>
+      </div>`;
+    }
+    if (sendBtn) sendBtn.disabled = true;
+    if (inputEl) {
+      inputEl.disabled = true;
+      inputEl.placeholder = '请先点上面 "＋ 新建任务" 创建一个任务再开始对话…';
+    }
+    return;
+  }
+
+  // 正常路径：渲染当前任务的对话历史
   buildChat.messages = (sess.messages || []).slice();
   buildChat.pendingAttachments = [];
   buildChat.generating = false;
-  // 重新渲染消息列表
-  const msgs = document.getElementById('chat-messages');
   msgs.innerHTML = '';
   if (buildChat.messages.length === 0) {
     msgs.classList.add('empty');
@@ -6018,43 +8555,185 @@ function applyCurrentSessionToUI() {
     }
   }
   renderPendingAttachments();
-  document.getElementById('chat-send-btn').disabled = false;
-  // 输入框不动 — 切换会话不清空用户当前正在打的字
+  if (sendBtn) sendBtn.disabled = false;
+  if (inputEl) {
+    inputEl.disabled = false;
+    inputEl.placeholder = inputEl.dataset.origPlaceholder || inputEl.placeholder;
+  }
 }
 
 function refreshSessionUI() {
-  const select = document.getElementById('session-select');
-  if (!select) return;
   const items = Object.values(sessions.list).sort((a, b) => b.updatedAt - a.updatedAt);
-  select.innerHTML = items.map(s =>
-    '<option value="' + s.id + '"' + (s.id === sessions.currentId ? ' selected' : '') + '>'
-    + escapeHtml(s.name)
-    + '</option>'
-  ).join('');
-
-  const meta = document.getElementById('session-meta');
   const sess = sessions.list[sessions.currentId];
-  if (meta && sess) {
-    const turns = Math.ceil(sess.messages.length / 2);
-    const versions = sess.messages.filter(m =>
-      m.role === 'assistant' && m.content.trim().startsWith('[RESUME]')
-    ).length;
-    let html = turns + ' 轮对话';
-    if (versions > 0) {
-      html += '<span class="v-tag">v' + versions + '</span>';
+
+  // 自定义按钮显示当前任务名
+  const pickerText = document.getElementById('task-picker-text');
+  if (pickerText) {
+    if (sess) {
+      pickerText.textContent = sess.name;
+      pickerText.classList.remove('empty');
+    } else {
+      pickerText.textContent = '（暂无任务，点 ＋ 新建）';
+      pickerText.classList.add('empty');
     }
-    meta.innerHTML = html;
+  }
+
+  // popover 内容
+  const menu = document.getElementById('task-picker-menu');
+  if (menu) {
+    if (items.length === 0) {
+      menu.innerHTML = '<div class="task-picker-empty">还没有任务<br><span style="font-size:11px;">点上方 "＋ 新建任务" 开始</span></div>';
+    } else {
+      menu.innerHTML = items.map(s => {
+        const isActive = s.id === sessions.currentId;
+        const turns = Math.ceil((s.messages || []).length / 2);
+        const versions = (s.messages || []).filter(m =>
+          m.role === 'assistant' && m.content.trim().startsWith('[RESUME]')
+        ).length;
+        const meta = turns + ' 轮对话' + (versions > 0 ? ' · 简历 v' + versions : '');
+        return `<div class="task-picker-item ${isActive ? 'active' : ''}" onclick="switchTaskFromPicker('${s.id}')">
+          <span class="tpi-check">${isActive ? '✓' : ''}</span>
+          <div class="tpi-main">
+            <div class="tpi-title">${escapeHtml(s.name)}</div>
+            <div class="tpi-meta">${meta}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // 顶部小元信息（计数）
+  const metaEl = document.getElementById('session-meta');
+  if (metaEl) {
+    if (sess) {
+      const turns = Math.ceil(sess.messages.length / 2);
+      const versions = sess.messages.filter(m =>
+        m.role === 'assistant' && m.content.trim().startsWith('[RESUME]')
+      ).length;
+      let html = turns + ' 轮对话';
+      if (versions > 0) {
+        html += '<span class="v-tag">v' + versions + '</span>';
+      }
+      metaEl.innerHTML = html;
+    } else {
+      metaEl.innerHTML = '';
+    }
+  }
+
+  // 重命名/删除按钮：没任务时灰掉
+  document.querySelectorAll('.session-actions .chat-tool-btn').forEach(btn => {
+    if (btn.textContent.includes('重命名') || btn.textContent.includes('删除')) {
+      btn.disabled = !sess;
+      btn.style.opacity = sess ? '1' : '0.4';
+      btn.style.cursor = sess ? 'pointer' : 'not-allowed';
+    }
+  });
+}
+
+// 自定义下拉的开关
+function toggleTaskPicker(ev) {
+  ev.stopPropagation();
+  const menu = document.getElementById('task-picker-menu');
+  const btn = document.getElementById('task-picker-btn');
+  if (!menu) return;
+  menu.hidden = !menu.hidden;
+  btn.classList.toggle('menu-open', !menu.hidden);
+  if (!menu.hidden) {
+    setTimeout(() => {
+      document.addEventListener('click', closeTaskPickerOnce, { once: true });
+    }, 0);
+  }
+}
+function closeTaskPickerOnce() {
+  const menu = document.getElementById('task-picker-menu');
+  const btn = document.getElementById('task-picker-btn');
+  if (menu) menu.hidden = true;
+  if (btn) btn.classList.remove('menu-open');
+}
+function switchTaskFromPicker(sessId) {
+  closeTaskPickerOnce();
+  switchSession(sessId);
+}
+
+// 从后端拉所有任务，每个任务在前端表示成一个 session（messages 延迟拉）
+// 默认激活：last_active_at 最新的那个
+async function initSessions() {
+  sessions.list = {};
+  sessions.currentId = null;
+  state.currentTaskId = null;
+  try {
+    const r = await authedFetch(BACKEND_URL + '/tasks');
+    if (!r.ok) throw new Error('加载任务失败 ' + r.status);
+    const data = await r.json();
+    const tasks = data.tasks || [];
+    // tasks 已经按 last_active_at DESC 排好序
+    for (const t of tasks) {
+      const sid = 'sess_t' + t.id;
+      sessions.list[sid] = {
+        id: sid,
+        name: t.title,
+        taskId: t.id,
+        createdAt: Date.parse(t.created_at) || Date.now(),
+        updatedAt: Date.parse(t.last_active_at) || Date.now(),
+        messages: [],
+        _hydrated: false,  // 标记是否已拉过 messages
+      };
+    }
+    // 默认激活最近活跃的（即 tasks[0]）
+    if (tasks.length > 0) {
+      const sid = 'sess_t' + tasks[0].id;
+      sessions.currentId = sid;
+      state.currentTaskId = tasks[0].id;
+      // 拉它的对话历史
+      await hydrateSessionMessages(sid);
+    }
+  } catch (e) {
+    console.warn('initSessions failed', e);
+  }
+  saveSessionsToStorage();
+  applyCurrentSessionToUI();
+  refreshSessionUI();
+}
+
+// 把刚生成的消息批量 POST 到后端 chat_messages 表
+async function persistChatMessagesToBackend(taskId, messages) {
+  if (!taskId || !messages || !messages.length) return;
+  const payload = {
+    messages: messages.map(m => ({
+      role: m.role,
+      content: m.content,
+      attachments: m.attachments,
+    })),
+  };
+  const r = await authedFetch(BACKEND_URL + '/tasks/' + taskId + '/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.error || ('对话历史保存失败 ' + r.status));
   }
 }
 
-function initSessions() {
-  loadSessionsFromStorage();
-  if (!sessions.currentId || !sessions.list[sessions.currentId]) {
-    sessions.currentId = createSessionRecord();
-    saveSessionsToStorage();
+// 拉指定 session 的对话历史并填进 messages
+async function hydrateSessionMessages(sessionId) {
+  const sess = sessions.list[sessionId];
+  if (!sess || !sess.taskId) return;
+  if (sess._hydrated) return;
+  try {
+    const r = await authedFetch(BACKEND_URL + '/tasks/' + sess.taskId + '/messages');
+    if (!r.ok) return;
+    const data = await r.json();
+    sess.messages = (data.messages || []).map(m => ({
+      role: m.role,
+      content: m.content,
+      attachments: m.attachments || undefined,
+    }));
+    sess._hydrated = true;
+  } catch (e) {
+    console.warn('hydrateSessionMessages failed', e);
   }
-  applyCurrentSessionToUI();
-  refreshSessionUI();
 }
 
 /* ===========================================================================
@@ -6078,35 +8757,133 @@ const PROMPT_TARGET_RESUME = `你是简历改写专家。基于以下两份输�
 - 段落长度有意不均匀（重要项目详细，次要简略）
 - 直接从 # 姓名 开头输出，**不要任何前置说明 / meta 评论 / 总结**`;
 
+/* ----- 服务端 API helper ----- */
+async function fetchTaskCompanies(taskId) {
+  if (!taskId) return [];
+  try {
+    const r = await authedFetch(BACKEND_URL + '/tasks/' + taskId + '/companies');
+    if (!r.ok) return [];
+    const d = await r.json();
+    return d.companies || [];
+  } catch { return []; }
+}
+
+async function fetchCompanyDetail(companyId) {
+  try {
+    const r = await authedFetch(BACKEND_URL + '/companies/' + companyId);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+async function fetchAllUserCompanies() {
+  try {
+    const r = await authedFetch(BACKEND_URL + '/me/companies');
+    if (!r.ok) return [];
+    const d = await r.json();
+    return d.companies || [];
+  } catch { return []; }
+}
+
+// 防抖 PATCH（用户改 company/position/JD 文字时不要每键一次请求）
+// 同时维护"已同步"状态：每个公司一个标记，让 UI 能显示同步指示
+const _companyPatchTimers = {};
+const _companyPatchStatus = {}; // id -> 'saving' | 'saved' | 'error'
+function patchCompanyDebounced(id) {
+  clearTimeout(_companyPatchTimers[id]);
+  _companyPatchStatus[id] = 'saving';
+  _companyPatchTimers[id] = setTimeout(async () => {
+    const c = state.targets[id];
+    if (!c) return;
+    try {
+      const r = await authedFetch(BACKEND_URL + '/companies/' + id, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          company_name: c.company || '',
+          position: c.position || '',
+          jd_content: c.jd || '',
+        }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        _companyPatchStatus[id] = 'error';
+        console.error('patch company HTTP', r.status, d);
+        toast('⚠️ 公司信息未同步到云端 (' + (d.error || r.status) + ')');
+        return;
+      }
+      _companyPatchStatus[id] = 'saved';
+    } catch (e) {
+      _companyPatchStatus[id] = 'error';
+      console.error('patch company failed', e);
+      toast('⚠️ 公司信息未同步：' + e.message);
+    }
+  }, 700);
+}
+
 function tab2NewId() {
-  return 'co_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  // 已废弃：现在用后端返回的整数 ID。仅保留兼容性占位。
+  return 'co_tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
 }
 
 function tab2Persist() {
-  try {
-    localStorage.setItem(TAB2_STORAGE_KEY, JSON.stringify({ targets: state.targets }));
-  } catch (e) { console.warn('Tab2 持久化失败', e); }
-  // 数据变更后顺便刷新简历中心列表（如果已渲染）
+  // 本地缓存（用于刷新简历中心列表）。真源在服务器。
   if (typeof renderResumeList === 'function' && document.getElementById('resume-list')) {
     renderResumeList();
   }
 }
 
-function tab2Load() {
-  try {
-    const raw = localStorage.getItem(TAB2_STORAGE_KEY);
-    if (raw) {
-      const data = JSON.parse(raw);
-      if (data.targets) state.targets = data.targets;
+// 旧版从 localStorage 加载已废弃，改为从服务器按当前任务拉
+async function tab2Load() {
+  state.targets = {};
+  if (!state.currentTaskId) {
+    renderCritiqueList();
+    return;
+  }
+  const companies = await fetchTaskCompanies(state.currentTaskId);
+  // 给每个公司预先建一条 state.targets 记录（critique/resume 内容延迟到展开时加载）
+  // 但为了避免页面刷新数据"消失"，我们直接预热全部 detail（5 张以内，无所谓）
+  const hydrations = companies.map(async (c) => {
+    const id = String(c.id);
+    state.targets[id] = {
+      id,
+      company: c.company_name || '',
+      position: c.position || '',
+      jd: c.jd_content || '',
+      critique: '',
+      resume: '',
+      status: c.has_critique ? 'critiqued' : 'draft',
+      expanded: false,
+      createdAt: Date.parse(c.created_at) || Date.now(),
+      _serverId: c.id,
+    };
+    // 预热：拉详情，把 critique / 最新激活的特化简历填进来
+    const detail = await fetchCompanyDetail(c.id);
+    if (!detail) return;
+    if (detail.critique) {
+      state.targets[id].critique = detail.critique.content_md || '';
     }
-  } catch (e) { console.warn('Tab2 加载失败', e); }
+    const activeTailored = (detail.tailored_versions || []).find(v => v.is_active);
+    if (activeTailored && activeTailored.content_md) {
+      state.targets[id].resume = activeTailored.content_md;
+      state.targets[id].status = 'resumed';
+    } else if (state.targets[id].critique) {
+      state.targets[id].status = 'critiqued';
+    }
+  });
+  await Promise.all(hydrations);
+  renderCritiqueList();
 }
 
 function getCompanyList() {
   return Object.values(state.targets).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 }
 
-function addCompany() {
+async function addCompany() {
+  if (!state.currentTaskId) {
+    alert('请先在「简历生成」Tab 1 新建或选择一个任务');
+    return;
+  }
   const list = getCompanyList();
   if (list.length >= TAB2_MAX_COMPANIES) {
     alert('最多同时管理 ' + TAB2_MAX_COMPANIES + ' 家公司，请先删除一家再添加。');
@@ -6114,7 +8891,26 @@ function addCompany() {
   }
   // 折叠其他卡片
   list.forEach(c => c.expanded = false);
-  const id = tab2NewId();
+  // POST 到服务器
+  let serverRow;
+  try {
+    const r = await authedFetch(BACKEND_URL + '/tasks/' + state.currentTaskId + '/companies', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ company_name: '', position: '', jd_content: '' }),
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      alert('添加公司失败：' + (d.error || r.status));
+      return;
+    }
+    const data = await r.json();
+    serverRow = data.company;
+  } catch (e) {
+    alert('网络错误：' + (e.message || e));
+    return;
+  }
+  const id = String(serverRow.id);
   state.targets[id] = {
     id,
     company: '',
@@ -6122,15 +8918,15 @@ function addCompany() {
     jd: '',
     critique: '',
     resume: '',
-    status: 'draft',     // draft | critiquing | critiqued | generating | resumed
+    status: 'draft',
     expanded: true,
-    createdAt: Date.now(),
+    createdAt: Date.parse(serverRow.created_at) || Date.now(),
+    _serverId: serverRow.id,
   };
   state.currentInterviewCompany = id;
   tab2Persist();
   renderCritiqueList();
   refreshInterviewSelector();
-  // 滚动到新加的卡片
   setTimeout(() => {
     const el = document.querySelector('.company-card[data-id="' + id + '"]');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -6141,15 +8937,40 @@ function removeCompany(id) {
   const c = state.targets[id];
   if (!c) return;
   const label = c.company ? c.company + (c.position ? ' / ' + c.position : '') : '这张草稿';
-  if (!confirm('删除「' + label + '」？\n（包含诊断报告和已生成的简历，不可恢复）')) return;
-  delete state.targets[id];
-  if (state.currentInterviewCompany === id) {
-    const remain = getCompanyList();
-    state.currentInterviewCompany = remain.length > 0 ? remain[remain.length - 1].id : null;
-  }
-  tab2Persist();
-  renderCritiqueList();
-  refreshInterviewSelector();
+  showConfirm({
+    title: '删除目标公司',
+    body: `删除「<strong style="color:var(--text);">${escapeHtml(label)}</strong>」？
+      <ul style="margin-top:10px;padding-left:20px;line-height:1.9;color:var(--text-dim);">
+        <li>诊断报告</li>
+        <li>特化简历（所有版本）</li>
+        <li>已生成的面试备战包（4 件套）</li>
+      </ul>
+      <div style="margin-top:10px;color:var(--red);">不可恢复。</div>`,
+    confirmText: '删除',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        const r = await authedFetch(BACKEND_URL + '/companies/' + id, { method: 'DELETE' });
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          alert('删除失败：' + (d.error || r.status));
+          return false;
+        }
+      } catch (e) {
+        alert('网络错误：' + (e.message || e));
+        return false;
+      }
+      delete state.targets[id];
+      if (state.currentInterviewCompany === id) {
+        const remain = getCompanyList();
+        state.currentInterviewCompany = remain.length > 0 ? remain[remain.length - 1].id : null;
+      }
+      tab2Persist();
+      renderCritiqueList();
+      refreshInterviewSelector();
+      return true;
+    },
+  });
 }
 
 function toggleCompany(id) {
@@ -6176,6 +8997,8 @@ function updateCompanyField(id, field, value) {
     }
     if (posEl) posEl.textContent = c.position || '';
   }
+  // 防抖 PATCH 到服务器
+  patchCompanyDebounced(id);
 }
 
 function loadSampleForCompany(id) {
@@ -6286,6 +9109,14 @@ async function generateCritiqueFor(id) {
     const result = await _runWithGame(card, aiPromise, 'burst');
     c.critique = result;
     c.status = 'critiqued';
+    // 自动存到服务器（必须在 catch 之外）
+    try {
+      await autoSaveCritique(id, result);
+      toast(`✓ "${c.company}" 诊断报告已保存到云端`);
+    } catch (e) {
+      console.warn('autoSaveCritique failed', e);
+      alert('⚠️ 诊断报告已生成但保存到云端失败：\n' + e.message + '\n\n下次登录可能看不到。请检查网络或积分。');
+    }
   } catch (e) {
     c.status = 'draft';
     alert('诊断失败：' + e.message);
@@ -6317,6 +9148,13 @@ async function generateTargetResumeFor(id) {
     const result = await _runWithGame(card, aiPromise, 'match');
     c.resume = result;
     c.status = 'resumed';
+    try {
+      await autoSaveTailoredResume(id, result);
+      toast(`✓ "${c.company}" 特化简历已保存到云端`);
+    } catch (e) {
+      console.warn('autoSaveTailoredResume failed', e);
+      alert('⚠️ 特化简历已生成但保存到云端失败：\n' + e.message + '\n\n下次登录可能看不到。请检查网络或积分。');
+    }
   } catch (e) {
     c.status = 'critiqued';
     alert('生成简历失败：' + e.message);
@@ -6464,43 +9302,138 @@ function renderCompanyCardHTML(c) {
 }
 
 /* ===========================================================================
-   TAB 3: INTERVIEW
+   TAB 3: INTERVIEW（跨任务全局视图）
+   下拉来自 /me/companies — 显示当前用户所有任务下的所有公司
+   选中后从 /companies/:id 拉详情，把已存的 critique + 4 件 kit 渲染出来
+   生成新的 4 件 kit 时，分别 POST 到 /companies/:id/interview-kit 落库
    =========================================================================== */
-function refreshInterviewSelector() {
+let _globalCompanies = [];  // 缓存：所有任务下的全部公司
+
+async function refreshInterviewSelector() {
   const select = document.getElementById('interview-company-select');
   if (!select) return;
-  // 只列出已诊断的公司（有 critique），草稿不显示
-  const ids = Object.keys(state.targets).filter(id => state.targets[id].critique);
-  if (ids.length === 0) {
+  _globalCompanies = await fetchAllUserCompanies();
+  // 仅显示已诊断（has_critique）的公司，按任务分组
+  const eligible = _globalCompanies.filter(c => c.company_name);  // 至少有公司名
+  if (eligible.length === 0) {
     select.innerHTML = '<option value="">— 请先在「公司诊断」诊断至少一家 —</option>';
     return;
   }
-  select.innerHTML = ids.map(s =>
-    '<option value="' + s + '"' + (s === state.currentInterviewCompany ? ' selected' : '') + '>' +
-    escapeHtml(state.targets[s].company || '(未命名)') + ' - ' + escapeHtml(state.targets[s].position || '') + '</option>'
-  ).join('');
+  // 按 task_id 分组渲染 <optgroup>
+  const groups = {};
+  for (const c of eligible) {
+    const taskKey = c.task_title || ('任务 #' + c.task_id);
+    if (!groups[taskKey]) groups[taskKey] = [];
+    groups[taskKey].push(c);
+  }
+  let html = '<option value="">— 选择公司 —</option>';
+  Object.keys(groups).forEach(taskTitle => {
+    html += '<optgroup label="📂 ' + escapeHtml(taskTitle) + '">';
+    groups[taskTitle].forEach(c => {
+      const label = (c.company_name || '(未命名)') + (c.position ? ' / ' + c.position : '');
+      html += '<option value="' + c.id + '">' + escapeHtml(label) + '</option>';
+    });
+    html += '</optgroup>';
+  });
+  select.innerHTML = html;
+  // 如果之前有选中过，尝试保留
+  if (state.currentInterviewCompany) {
+    const exists = _globalCompanies.find(c => String(c.id) === String(state.currentInterviewCompany));
+    if (exists) {
+      select.value = state.currentInterviewCompany;
+    }
+  }
+}
+
+// 选中某家公司：从服务器拉详情，渲染已有的 4 件 kit
+async function onInterviewCompanyChange() {
+  const select = document.getElementById('interview-company-select');
+  const cid = select.value;
+  if (!cid) {
+    state.currentInterviewCompany = null;
+    document.getElementById('interview-output').classList.remove('hidden');
+    document.getElementById('interview-output').classList.add('placeholder');
+    document.getElementById('interview-output').innerHTML = '选择公司后点击按钮，生成战略 / 自我介绍 / 问答库 / 深度追问预案';
+    document.getElementById('interview-result').classList.add('hidden');
+    return;
+  }
+  state.currentInterviewCompany = cid;
+  // 拉详情
+  const detail = await fetchCompanyDetail(cid);
+  if (!detail) {
+    alert('加载该公司详情失败');
+    return;
+  }
+  // 把详情缓存到 state.targets（可能不在当前任务下，但缓存方便后续生成时引用）
+  const idStr = String(detail.company.id);
+  const activeTailored = (detail.tailored_versions || []).find(v => v.is_active);
+  state.targets[idStr] = state.targets[idStr] || {};
+  Object.assign(state.targets[idStr], {
+    id: idStr,
+    company: detail.company.company_name || '',
+    position: detail.company.position || '',
+    jd: detail.company.jd_content || '',
+    critique: detail.critique ? detail.critique.content_md : '',
+    resume: activeTailored ? (activeTailored.content_md || '') : '',
+    _serverId: detail.company.id,
+  });
+  // 已有的 4 件 kit
+  const kitMap = {};
+  for (const k of (detail.interview_kits || [])) {
+    kitMap[k.kit_type] = k.content_md;
+  }
+  const hasAny = Object.keys(kitMap).length > 0;
+  if (hasAny) {
+    // 渲染到 4 个 sub-tab
+    document.getElementById('interview-output').classList.add('hidden');
+    document.getElementById('interview-result').classList.remove('hidden');
+    document.getElementById('sub-strategy').innerHTML = renderMarkdown(kitMap.strategy || '_（这部分还没生成 — 点上方"生成 4 类备战材料"补齐）_');
+    document.getElementById('sub-talking').innerHTML = renderMarkdown(kitMap.talking || '_（这部分还没生成）_');
+    document.getElementById('sub-qa').innerHTML = renderMarkdown(kitMap.qa || '_（这部分还没生成）_');
+    document.getElementById('sub-deep').innerHTML = renderMarkdown(kitMap.deep || '_（这部分还没生成）_');
+  } else {
+    // 没有已存的 kit，显示提示
+    document.getElementById('interview-output').classList.remove('hidden');
+    document.getElementById('interview-output').classList.add('placeholder');
+    document.getElementById('interview-output').innerHTML =
+      '该公司还没生成面试备战材料。点上方 <strong>"🎤 生成 4 类备战材料"</strong> 开始。';
+    document.getElementById('interview-result').classList.add('hidden');
+  }
 }
 
 async function generateInterview() {
-  const slug = document.getElementById('interview-company-select').value;
-  if (!slug) {
-    alert('请先选择已诊断的公司（或先去「公司诊断」生成一个）');
+  const cid = document.getElementById('interview-company-select').value;
+  if (!cid) {
+    alert('请先选择一家已诊断的公司');
     return;
   }
-  const target = state.targets[slug];
-  if (!target) {
-    alert('找不到该公司数据');
-    return;
+  // 用 state.targets 里缓存的数据；如果没有就再拉一次
+  let target = state.targets[String(cid)];
+  if (!target || !target.critique) {
+    const detail = await fetchCompanyDetail(cid);
+    if (!detail || !detail.critique) {
+      alert('该公司还没有诊断报告。请先去「公司诊断」生成。');
+      return;
+    }
+    const activeTailored = (detail.tailored_versions || []).find(v => v.is_active);
+    target = {
+      id: String(cid),
+      company: detail.company.company_name || '',
+      position: detail.company.position || '',
+      jd: detail.company.jd_content || '',
+      critique: detail.critique.content_md || '',
+      resume: activeTailored ? (activeTailored.content_md || '') : '',
+    };
+    state.targets[String(cid)] = target;
   }
-  // 用名言滚动替代纯 spinner
+
+  // 名言滚动 loading
   const outputEl = document.getElementById('interview-output');
-  outputEl.classList.remove('placeholder', 'loading');
+  outputEl.classList.remove('placeholder', 'loading', 'hidden');
   outputEl.innerHTML = '';
   document.getElementById('interview-result').classList.add('hidden');
-
   const slideshow = new QuoteFortune(outputEl);
 
-  // 准备 AI 请求并行运行
   const resumeForUse = target.resume || findLatestResume() || '';
   const userMsg = `【公司】${target.company}\n【岗位】${target.position}\n\n【特化简历】\n${resumeForUse}\n\n【JD】\n${target.jd}\n\n【诊断报告】\n${target.critique}`;
   const mockCombined = `## strategy\n${SAMPLE_INTERVIEW_STRATEGY}\n\n## talking\n${SAMPLE_INTERVIEW_TALKING}\n\n## qa\n${SAMPLE_INTERVIEW_QA}\n\n## deep\n${SAMPLE_INTERVIEW_DEEP}`;
@@ -6511,14 +9444,8 @@ async function generateInterview() {
   } catch (e) {
     err = e;
   }
-
-  // 通知名言滚动 AI 已就绪
   slideshow.notifyAIReady();
-
-  // 等当前这条名言展示完（最多 7 秒），然后渲染结果
-  await new Promise(resolve => {
-    slideshow.onComplete = resolve;
-  });
+  await new Promise(resolve => { slideshow.onComplete = resolve; });
 
   if (err) {
     showError('interview-output', err.message);
@@ -6529,14 +9456,35 @@ async function generateInterview() {
     const parts = parseInterviewSections(combined);
     document.getElementById('interview-output').classList.add('hidden');
     document.getElementById('interview-result').classList.remove('hidden');
-    // 兜底：缺哪段就提示，并附上原文 fallback（让用户至少能看到完整的 Claude 输出）
     const missMsg = (sec) => '（未识别出 ## ' + sec + ' 段落 — 下方显示完整原始内容供参考）\n\n---\n\n' + combined;
     document.getElementById('sub-strategy').innerHTML = renderMarkdown(parts.strategy || missMsg('strategy'));
     document.getElementById('sub-talking').innerHTML = renderMarkdown(parts.talking || missMsg('talking'));
     document.getElementById('sub-qa').innerHTML = renderMarkdown(parts.qa || missMsg('qa'));
     document.getElementById('sub-deep').innerHTML = renderMarkdown(parts.deep || missMsg('deep'));
     target.interview = parts;
-    target.interviewRaw = combined;  // 存原始输出，下次 parser 改了不用重调 Claude
+    target.interviewRaw = combined;
+
+    // 4 件 kit 分别落库；解析失败的部分回退保存原文，避免数据丢失
+    const kitsToSave = [
+      ['strategy', parts.strategy || (combined.length < 8000 ? combined : '')],
+      ['talking',  parts.talking],
+      ['qa',       parts.qa],
+      ['deep',     parts.deep],
+    ];
+    const saveResults = await Promise.allSettled(
+      kitsToSave
+        .filter(([_, md]) => !!md)
+        .map(([kt, md]) => autoSaveInterviewKit(cid, kt, md).then(() => kt).catch(e => { throw {kt, msg: e.message}; }))
+    );
+    const okKits = saveResults.filter(r => r.status === 'fulfilled').map(r => r.value);
+    const failKits = saveResults.filter(r => r.status === 'rejected').map(r => r.reason);
+    if (okKits.length && !failKits.length) {
+      toast(`✓ ${target.company || '该公司'} 面试备战四件套已全部保存到云端`);
+    } else if (okKits.length && failKits.length) {
+      alert(`⚠️ 部分保存失败：\n已保存：${okKits.join(', ')}\n失败：${failKits.map(f => f.kt + '(' + f.msg + ')').join('; ')}\n\n失败的部分下次登录看不到。`);
+    } else if (failKits.length) {
+      alert(`⚠️ 面试备战四件套全部保存失败：\n${failKits.map(f => f.kt + ': ' + f.msg).join('\n')}\n\n内容已显示在当前页面，但下次登录将不可见。`);
+    }
     tab2Persist();
   } catch (e) {
     showError('interview-output', e.message);
@@ -6958,12 +9906,125 @@ function initHub() {
   renderTemplateGrid();
   refreshTemplateHint();
   renderResumeList();
+  renderTasksManager();
 }
 
-// 切到 Tab 4 时刷新简历列表（懒加载，确保 Tab 2 数据已就绪）
+// 渲染"任务对话管理"模块（基于 sessions.list）
+async function renderTasksManager() {
+  const list = document.getElementById('tasks-mgr-list');
+  const hint = document.getElementById('tasks-mgr-hint');
+  if (!list) return;
+  const items = Object.values(sessions.list || {}).sort((a, b) => b.updatedAt - a.updatedAt);
+  if (hint) {
+    hint.textContent = items.length === 0 ? '0 个任务' : (items.length + ' 个任务');
+  }
+  if (items.length === 0) {
+    list.innerHTML = '<div class="tasks-mgr-empty">还没有任务<br><span style="font-size:11px;">在「简历生成」Tab 1 点 ＋ 新建任务</span></div>';
+    return;
+  }
+  // 为每个任务并行从服务器拉公司数（精准统计）
+  const taskMetaPromises = items.map(async (s) => {
+    if (!s.taskId) return { sessId: s.id, companyCount: 0, resumeCount: 0 };
+    try {
+      const companies = await fetchTaskCompanies(s.taskId);
+      const versions = (s.messages || []).filter(m =>
+        m.role === 'assistant' && m.content.trim().startsWith('[RESUME]')
+      ).length;
+      return { sessId: s.id, companyCount: companies.length, resumeCount: versions };
+    } catch { return { sessId: s.id, companyCount: 0, resumeCount: 0 }; }
+  });
+  const metas = await Promise.all(taskMetaPromises);
+  const metaMap = {};
+  for (const m of metas) metaMap[m.sessId] = m;
+
+  list.innerHTML = items.map(s => {
+    const isCur = s.id === sessions.currentId;
+    const m = metaMap[s.id] || {};
+    const turns = Math.ceil((s.messages || []).length / 2);
+    const dt = new Date(s.updatedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return `<div class="tmr-card ${isCur ? 'is-current' : ''}">
+      <div class="tmr-icon">📂</div>
+      <div class="tmr-body">
+        <div class="tmr-name">${escapeHtml(s.name)}${isCur ? '<span class="current-tag">● 当前</span>' : ''}</div>
+        <div class="tmr-stats">
+          <span class="tmr-stat"><strong>${turns}</strong> 轮对话</span>
+          <span class="tmr-stat"><strong>${m.resumeCount || 0}</strong> 份主简历</span>
+          <span class="tmr-stat"><strong>${m.companyCount || 0}</strong> 家公司</span>
+          <span class="tmr-stat">${dt}</span>
+        </div>
+      </div>
+      <div class="tmr-actions">
+        ${isCur ? '' : `<button class="tmr-btn" onclick="hubSwitchToTask('${s.id}')">切到此任务</button>`}
+        <button class="tmr-btn danger" onclick="hubDeleteTask('${s.id}')">删除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function hubSwitchToTask(sessId) {
+  // 切到 Tab 1 并切任务
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'build'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-build'));
+  document.body.classList.add('tab-build-active');
+  switchSession(sessId);
+}
+
+function hubDeleteTask(sessId) {
+  const sess = sessions.list[sessId];
+  if (!sess) return;
+  showConfirm({
+    title: '⚠️ 删除任务',
+    body: `这将永久删除任务「<strong style="color:var(--text);">${escapeHtml(sess.name)}</strong>」及其下所有数据：
+      <ul style="margin-top:10px;padding-left:20px;line-height:1.9;color:var(--text-dim);">
+        <li>所有对话历史</li>
+        <li>所有主简历版本</li>
+        <li>所有目标公司（含诊断 / 特化简历 / 面试备战包）</li>
+      </ul>
+      <div style="margin-top:10px;color:var(--red);">此操作不可恢复。</div>`,
+    requireInput: true,
+    inputLabel: `为确认删除，请输入任务名「${sess.name}」`,
+    inputPlaceholder: sess.name,
+    confirmText: '永久删除',
+    danger: true,
+    onConfirm: async (typed) => {
+      if (typed !== sess.name) { alert('输入的名称与任务名不一致'); return false; }
+      try {
+        await deleteBackendTask(sess.taskId);
+      } catch (e) {
+        alert('删除失败：' + (e.message || e));
+        return false;
+      }
+      const wasCurrent = sessId === sessions.currentId;
+      delete sessions.list[sessId];
+      if (wasCurrent) {
+        const remaining = Object.keys(sessions.list);
+        if (remaining.length > 0) {
+          const nextId = remaining.sort((a, b) => sessions.list[b].updatedAt - sessions.list[a].updatedAt)[0];
+          sessions.currentId = nextId;
+          state.currentTaskId = sessions.list[nextId].taskId || null;
+        } else {
+          sessions.currentId = null;
+          state.currentTaskId = null;
+        }
+        applyCurrentSessionToUI();
+      }
+      saveSessionsToStorage();
+      refreshSessionUI();
+      renderTasksManager();
+      if (typeof tab2Load === 'function') tab2Load().catch(()=>{});
+      if (typeof refreshInterviewSelector === 'function') refreshInterviewSelector().catch(()=>{});
+      return true;
+    },
+  });
+}
+
+// 切到 Tab 4 时刷新简历列表 + 任务管理列表（懒加载，确保 Tab 2 数据已就绪）
 document.querySelectorAll('.tab[data-tab="deai"]').forEach(btn => {
   btn.addEventListener('click', () => {
-    setTimeout(renderResumeList, 50);
+    setTimeout(() => {
+      renderResumeList();
+      renderTasksManager();
+    }, 50);
   });
 });
 
@@ -6987,18 +10048,38 @@ window.addEventListener('scroll', updateBackToTop, { passive: true });
 /* ===========================================================================
    INIT
    =========================================================================== */
-document.body.classList.add('tab-build-active');  // 默认 Tab 1，留出底部悬浮输入框空间
-updateModeIndicator();
-checkServer();
-initSessions();   // 加载 localStorage 里的历史会话，没有就新建一个
-tab2Load();       // 加载 Tab 2 多公司数据
-renderCritiqueList();
-refreshInterviewSelector();
-initHub();        // Tab 4 简历中心：加载模板偏好 + 渲染模板卡 + 简历列表
-loadModels();     // 加载用户配置的 AI 模型（密码保护的设置）
-updateBackToTop();
-// 每 15 秒重新探一次后端 — 用户启动 server 后会自动连上
-setInterval(checkServer, 15000);
+let _appBooted = false;
+async function bootApp() {
+  if (_appBooted) return;
+  _appBooted = true;
+  document.body.classList.add('tab-build-active');  // 默认 Tab 1
+  updateModeIndicator();
+  checkServer();
+  // 必须先 await initSessions 完成，因为它会设 state.currentTaskId
+  // 之后 tab2Load / refreshInterviewSelector 要靠这个 id 拉数据
+  await initSessions();
+  // Tab 2 / Tab 3 数据来自服务器（异步）
+  tab2Load().catch(e => console.warn('tab2Load init failed', e));
+  refreshInterviewSelector().catch(e => console.warn('refreshInterviewSelector init failed', e));
+  initHub();
+  loadModels();
+  updateBackToTop();
+  setInterval(checkServer, 15000);
+}
+
+// 启动总流程：先检查后端 + 是否已登录
+// 未登录 → 跳回首页 /（首页有登录/注册弹窗）；已登录 → 启动 App
+(async function bootstrap() {
+  try { await fetch(BACKEND_URL + '/health'); } catch {}
+  const user = await checkAuth();
+  if (user) {
+    state.currentUser = user;
+    onLoggedIn(user);
+  } else {
+    // /app 没登录 → 跳到 / 让首页处理
+    location.href = '/';
+  }
+})();
 </script>
 
 </body>
