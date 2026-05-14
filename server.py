@@ -227,6 +227,20 @@ CREATE TABLE IF NOT EXISTS recharge_codes (
 );
 CREATE INDEX IF NOT EXISTS idx_recharge_status ON recharge_codes(status);
 CREATE INDEX IF NOT EXISTS idx_recharge_bound ON recharge_codes(bound_user_id);
+
+-- 平台级模型配置：admin 配置一次，所有用户共用
+-- API Key 明文存储在服务器侧（不再走 localStorage）
+CREATE TABLE IF NOT EXISTS system_models (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  base_url TEXT NOT NULL,
+  api_key TEXT NOT NULL,
+  model_name TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 0 CHECK(enabled IN (0,1)),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_system_models_enabled ON system_models(enabled);
 """
 
 # 默认计费规则（init 时如不存在则注入）
@@ -763,6 +777,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if not user:
                 return
             return self._dispatch_admin_get(path, user)
+
+        # ---- 平台级模型公开端点（已登录用户都能拿，不含 api_key）----
+        if path == '/system-model':
+            user = self._require_auth()
+            if not user:
+                return
+            return self._system_model_current(user)
 
         # ---- PR2: 任务 / 简历 / 公司 GET 路由（都需要登录）----
         if path.startswith('/tasks') or path.startswith('/companies') \
@@ -1723,6 +1744,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._admin_invite_list(admin_user)
         if path == '/admin/recharges':
             return self._admin_recharge_list(admin_user)
+        if path == '/admin/system-models':
+            return self._admin_system_models_list(admin_user)
         self.send_error(404)
 
     def _dispatch_admin_post(self, path, admin_user):
@@ -1743,6 +1766,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         m = re.fullmatch(r'/admin/recharges/([A-Z0-9]+)/revoke', path)
         if m:
             return self._admin_recharge_revoke(admin_user, m.group(1))
+        if path == '/admin/system-models':
+            return self._admin_system_model_create(admin_user)
+        m = re.fullmatch(r'/admin/system-models/(\d+)/delete', path)
+        if m:
+            return self._admin_system_model_delete(admin_user, int(m.group(1)))
         self.send_error(404)
 
     def _dispatch_admin_patch(self, path, admin_user):
@@ -1750,6 +1778,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         m = re.fullmatch(r'/admin/users/(\d+)', path)
         if m:
             return self._admin_user_update(admin_user, int(m.group(1)))
+        m = re.fullmatch(r'/admin/system-models/(\d+)', path)
+        if m:
+            return self._admin_system_model_update(admin_user, int(m.group(1)))
         self.send_error(404)
 
     # ----- 概览 -----
@@ -2164,6 +2195,139 @@ class Handler(http.server.BaseHTTPRequestHandler):
             conn.close()
         self._send_json(200, {'ok': True})
 
+    # ----- 平台级模型配置（admin 配一次，全平台共用） -----
+    def _admin_system_models_list(self, admin_user):
+        """GET /admin/system-models — 返回完整字段（含 api_key），仅 admin 可见。"""
+        conn = get_db()
+        try:
+            rows = conn.execute(
+                'SELECT id, name, base_url, api_key, model_name, enabled, '
+                'created_at, updated_at FROM system_models ORDER BY id ASC'
+            ).fetchall()
+        finally:
+            conn.close()
+        self._send_json(200, {'models': [dict(r) for r in rows]})
+
+    def _admin_system_model_create(self, admin_user):
+        """POST /admin/system-models — 创建模型。body: {name, baseUrl, apiKey, modelName, enabled?}"""
+        try:
+            body = self._read_json_body()
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'请求格式错误：{e}'})
+            return
+        name = (body.get('name') or '').strip()
+        base_url = (body.get('baseUrl') or '').strip()
+        api_key = (body.get('apiKey') or '').strip()
+        model_name = (body.get('modelName') or '').strip()
+        enabled = 1 if body.get('enabled') else 0
+        if not name or not base_url or not api_key or not model_name:
+            self._send_json(400, {'error': 'name/baseUrl/apiKey/modelName 都不能为空'})
+            return
+        conn = get_db()
+        try:
+            if enabled:
+                # 同时只能有一个 enabled，先把其他全部关掉
+                conn.execute('UPDATE system_models SET enabled = 0, updated_at = datetime("now")')
+            cur = conn.execute(
+                'INSERT INTO system_models (name, base_url, api_key, model_name, enabled) '
+                'VALUES (?,?,?,?,?)',
+                (name, base_url, api_key, model_name, enabled),
+            )
+            conn.commit()
+            row = conn.execute(
+                'SELECT id, name, base_url, api_key, model_name, enabled, '
+                'created_at, updated_at FROM system_models WHERE id = ?',
+                (cur.lastrowid,),
+            ).fetchone()
+        finally:
+            conn.close()
+        self._send_json(201, {'model': dict(row)})
+
+    def _admin_system_model_update(self, admin_user, model_id):
+        """PATCH /admin/system-models/<id> — 更新任意字段。"""
+        try:
+            body = self._read_json_body()
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'请求格式错误：{e}'})
+            return
+        # 允许更新的字段映射
+        fields = {
+            'name': 'name',
+            'baseUrl': 'base_url',
+            'apiKey': 'api_key',
+            'modelName': 'model_name',
+            'enabled': 'enabled',
+        }
+        sets = []
+        vals = []
+        will_enable = False
+        for src, col in fields.items():
+            if src in body:
+                v = body[src]
+                if col == 'enabled':
+                    v = 1 if v else 0
+                    will_enable = bool(v)
+                else:
+                    v = (v or '').strip() if isinstance(v, str) else v
+                sets.append(f'{col} = ?')
+                vals.append(v)
+        if not sets:
+            self._send_json(400, {'error': '至少要传一个字段'})
+            return
+        sets.append('updated_at = datetime("now")')
+        conn = get_db()
+        try:
+            existing = conn.execute('SELECT id FROM system_models WHERE id = ?', (model_id,)).fetchone()
+            if not existing:
+                self._send_json(404, {'error': '模型不存在'})
+                return
+            # 启用该模型时，先把其他全部禁用（确保同时只有一个 enabled）
+            if will_enable:
+                conn.execute(
+                    'UPDATE system_models SET enabled = 0, updated_at = datetime("now") WHERE id != ?',
+                    (model_id,),
+                )
+            vals.append(model_id)
+            conn.execute(f'UPDATE system_models SET {", ".join(sets)} WHERE id = ?', vals)
+            conn.commit()
+            row = conn.execute(
+                'SELECT id, name, base_url, api_key, model_name, enabled, '
+                'created_at, updated_at FROM system_models WHERE id = ?',
+                (model_id,),
+            ).fetchone()
+        finally:
+            conn.close()
+        self._send_json(200, {'model': dict(row)})
+
+    def _admin_system_model_delete(self, admin_user, model_id):
+        """POST /admin/system-models/<id>/delete — 删除模型。"""
+        conn = get_db()
+        try:
+            existing = conn.execute('SELECT id FROM system_models WHERE id = ?', (model_id,)).fetchone()
+            if not existing:
+                self._send_json(404, {'error': '模型不存在'})
+                return
+            conn.execute('DELETE FROM system_models WHERE id = ?', (model_id,))
+            conn.commit()
+        finally:
+            conn.close()
+        self._send_json(200, {'ok': True})
+
+    def _system_model_current(self, current_user):
+        """GET /system-model — 任何登录用户都能调，返回当前启用的模型（不含 api_key）。"""
+        conn = get_db()
+        try:
+            row = conn.execute(
+                'SELECT id, name, base_url, model_name, enabled, updated_at '
+                'FROM system_models WHERE enabled = 1 ORDER BY updated_at DESC LIMIT 1'
+            ).fetchone()
+        finally:
+            conn.close()
+        if not row:
+            self._send_json(200, {'model': None})
+            return
+        self._send_json(200, {'model': dict(row)})
+
     # ----- 任务的对话历史（不计费，跟着 chat_turn 一起跑）-----
     def _chat_messages_list(self, user, task_id):
         conn = get_db()
@@ -2543,8 +2707,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _handle_proxy_chat(self, current_user):
         """
-        转发到 OpenAI-compatible API（用户在前端配置的模型）。
-        请求体：{baseUrl, apiKey, modelName, system, user, messages, temperature?, task_id?}
+        转发到 OpenAI-compatible API。
+        优先级：
+          1) 如果数据库里有 enabled=1 的 system_models 行 → 用它（admin 在 /admin/system-models 配置）
+          2) 否则 fallback 到请求 body 里的 {baseUrl, apiKey, modelName}（兼容旧前端 localStorage 路径）
+        请求体：{baseUrl?, apiKey?, modelName?, system, user, messages, temperature?, task_id?}
         """
         import urllib.request
         import urllib.error
@@ -2561,6 +2728,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
         except (ValueError, json.JSONDecodeError) as e:
             self._send_json(400, {'error': f'请求格式错误：{e}'})
             return
+
+        # 优先用 admin 在数据库配置的平台级模型；覆盖 body 里前端传来的值
+        sys_conn = get_db()
+        try:
+            sys_model = sys_conn.execute(
+                'SELECT base_url, api_key, model_name FROM system_models '
+                "WHERE enabled = 1 ORDER BY updated_at DESC LIMIT 1"
+            ).fetchone()
+        finally:
+            sys_conn.close()
+        if sys_model:
+            base_url = sys_model['base_url']
+            api_key = sys_model['api_key']
+            model_name = sys_model['model_name']
 
         if task_id is not None:
             conn = get_db()

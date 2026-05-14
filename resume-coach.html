@@ -4763,6 +4763,7 @@ const modelState = {
 };
 
 function loadModels() {
+  // 1. 先从 localStorage 快速填充（避免空白闪烁）
   try {
     const raw = localStorage.getItem(MODEL_STORAGE_KEY);
     if (raw) {
@@ -4772,6 +4773,8 @@ function loadModels() {
   } catch (e) {
     console.warn('加载模型配置失败', e);
   }
+  // 2. 异步从服务器拉取（admin 拿完整字段，普通用户拿不含 apiKey 的占位）
+  fetchModelsFromServer().catch(err => console.warn('同步服务器模型失败', err));
 }
 
 function persistModels() {
@@ -4779,6 +4782,120 @@ function persistModels() {
     localStorage.setItem(MODEL_STORAGE_KEY, JSON.stringify({ models: modelState.models }));
   } catch (e) {
     console.warn('保存模型配置失败', e);
+  }
+  // 异步同步到服务器（admin 写入会成功；非 admin 静默忽略——他们的修改只存在本地，
+  // 而服务器返回的全局配置会在下次 loadModels 时覆盖）
+  syncModelsToServer().catch(err => console.warn('上传模型到服务器失败', err));
+}
+
+// ---- 平台级模型同步（admin 在 /admin/system-models 数据库，所有用户共用） ----
+async function fetchModelsFromServer() {
+  // 先尝试 admin 端点（admin 拿完整字段，含 apiKey）
+  try {
+    const r = await fetch(BACKEND_URL + '/admin/system-models');
+    if (r.ok) {
+      const { models } = await r.json();
+      modelState.models = (models || []).map(m => ({
+        id: 'mdl_srv_' + m.id,
+        _serverId: m.id,
+        name: m.name,
+        baseUrl: m.base_url,
+        apiKey: m.api_key,
+        modelName: m.model_name,
+        enabled: !!m.enabled,
+      }));
+      try { localStorage.setItem(MODEL_STORAGE_KEY, JSON.stringify({ models: modelState.models })); } catch (e) {}
+      if (typeof renderModelList === 'function') renderModelList();
+      if (typeof updateModeIndicator === 'function') updateModeIndicator();
+      return;
+    }
+    // 403 = 已登录但非 admin —— fallback 到公开端点
+    if (r.status !== 401 && r.status !== 403) {
+      throw new Error('admin endpoint HTTP ' + r.status);
+    }
+  } catch (e) {
+    console.warn('拉取 admin/system-models 失败:', e);
+  }
+  // 普通用户：用公开端点（不返回 apiKey，但调 /proxy-chat 时后端会从数据库读真 key）
+  try {
+    const r = await fetch(BACKEND_URL + '/system-model');
+    if (!r.ok) return;
+    const { model } = await r.json();
+    if (model) {
+      modelState.models = [{
+        id: 'mdl_srv_' + model.id,
+        _serverId: model.id,
+        name: model.name,
+        baseUrl: model.base_url,
+        apiKey: '••• admin-configured •••', // 非空占位，让 getEnabledModel() 通过
+        modelName: model.model_name,
+        enabled: !!model.enabled,
+      }];
+    } else {
+      modelState.models = [];
+    }
+    if (typeof renderModelList === 'function') renderModelList();
+    if (typeof updateModeIndicator === 'function') updateModeIndicator();
+  } catch (e) {
+    console.warn('拉取 /system-model 失败:', e);
+  }
+}
+
+let _syncModelsBusy = false;
+async function syncModelsToServer() {
+  // 简化：admin 才能成功；非 admin 会被服务器 403 拒掉，静默退出
+  if (_syncModelsBusy) return;
+  _syncModelsBusy = true;
+  try {
+    const probe = await fetch(BACKEND_URL + '/admin/system-models');
+    if (probe.status === 401 || probe.status === 403) return; // 非 admin
+    if (!probe.ok) return;
+    const { models: serverModels } = await probe.json();
+    const serverIds = new Set((serverModels || []).map(m => m.id));
+    const localServerIds = new Set(
+      modelState.models.filter(m => m._serverId).map(m => m._serverId)
+    );
+
+    // 1) 删除：服务器有但本地没了
+    for (const sm of serverModels || []) {
+      if (!localServerIds.has(sm.id)) {
+        await fetch(BACKEND_URL + '/admin/system-models/' + sm.id + '/delete', { method: 'POST' });
+      }
+    }
+    // 2) 新建 + 更新
+    for (const lm of modelState.models) {
+      // 占位 apiKey 不要写回服务器（普通用户视角才会有）
+      if (lm.apiKey && lm.apiKey.startsWith('•••')) continue;
+      const payload = {
+        name: lm.name || '',
+        baseUrl: lm.baseUrl || '',
+        apiKey: lm.apiKey || '',
+        modelName: lm.modelName || '',
+        enabled: !!lm.enabled,
+      };
+      // 缺必填字段就跳过（添加新模型时常见，等用户填完再触发同步）
+      if (!payload.name || !payload.baseUrl || !payload.apiKey || !payload.modelName) continue;
+
+      if (lm._serverId && serverIds.has(lm._serverId)) {
+        await fetch(BACKEND_URL + '/admin/system-models/' + lm._serverId, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        const r = await fetch(BACKEND_URL + '/admin/system-models', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (r.ok) {
+          const { model } = await r.json();
+          lm._serverId = model.id; // 把服务器分配的 id 回写
+        }
+      }
+    }
+  } finally {
+    _syncModelsBusy = false;
   }
 }
 
